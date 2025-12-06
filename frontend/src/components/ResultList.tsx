@@ -3,59 +3,50 @@ import { CommuteResult } from "../types";
 
 interface ResultListProps {
     results: CommuteResult[];
+    onSelect: (id: string) => void;
+    selectedId: string | null;
 }
 
-const ResultList: React.FC<ResultListProps> = ({ results }) => {
+const ResultList: React.FC<ResultListProps> = ({ results, onSelect, selectedId }) => {
     if (results.length === 0) {
         return null;
     }
 
     return (
-        <div>
-            <h2>검색 결과 ({results.length}건)</h2>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-                {results.map((result) => (
-                    <li
+        <div className="space-y-4 mt-8">
+            <h2 className="text-lg font-bold text-gray-800 px-1">
+                검색 결과 {results.length}건
+            </h2>
+            {results.map((result) => {
+                const isSelected = result.university_id === selectedId;
+                return (
+                    <div
                         key={result.university_id}
-                        style={{
-                            border: "1px solid #ddd",
-                            borderRadius: "8px",
-                            padding: "1rem",
-                            marginBottom: "1rem",
-                        }}
+                        className={`p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${isSelected
+                                ? "border-blue-500 bg-blue-50/50 ring-1 ring-blue-500"
+                                : "border-gray-200 bg-white hover:border-blue-200"
+                            }`}
+                        onClick={() => onSelect(result.university_id)}
                     >
-                        <h3 style={{ margin: "0 0 0.5rem 0" }}>{result.university_name}</h3>
-                        <p style={{ margin: "0 0 0.5rem 0", color: "#666" }}>
-                            {result.university_address}
-                        </p>
-                        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                            <span
-                                style={{
-                                    fontWeight: "bold",
-                                    color: result.duration_minutes <= 60 ? "green" : "orange",
-                                }}
-                            >
-                                {result.duration_minutes}분
-                            </span>
-                            <span
-                                style={{
-                                    fontSize: "0.9rem",
-                                    padding: "0.2rem 0.5rem",
-                                    backgroundColor: "#f0f0f0",
-                                    borderRadius: "4px",
-                                }}
-                            >
+                        <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-lg font-bold text-gray-900">{result.university_name}</h3>
+                            <span className="text-blue-600 font-bold text-lg">{result.duration_minutes}분</span>
+                        </div>
+                        <p className="text-gray-500 text-sm mb-4">{result.university_address}</p>
+
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-md">
                                 {result.transport_mode === "transit" ? "대중교통" : "자동차"}
                             </span>
+                            {result.route_summary && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md">
+                                    {result.route_summary}
+                                </span>
+                            )}
                         </div>
-                        {result.route_summary && (
-                            <p style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>
-                                경로: {result.route_summary}
-                            </p>
-                        )}
-                    </li>
-                ))}
-            </ul>
+                    </div>
+                );
+            })}
         </div>
     );
 };

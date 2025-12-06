@@ -7,7 +7,7 @@ from pydantic import BaseModel
 TransportMode = Literal["transit", "car"]
 
 
-class CommuteRequest(BaseModel):
+class SearchRequest(BaseModel):
     address: str
     transport_mode: TransportMode = "transit"
     max_commute_minutes: int | None = None
@@ -30,5 +30,6 @@ class CommuteResult(BaseModel):
     route_summary: str
 
 
-class CommuteResponse(BaseModel):
+class SearchResponse(BaseModel):
     results: List[CommuteResult]
+    home_location: dict | None = None

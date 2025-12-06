@@ -1,6 +1,6 @@
 // frontend/src/api.ts
 
-import type { CommuteResponse, TransportMode, University } from "./types";
+import { CommuteResponse, University, TransportMode } from "./types/university";
 
 const BASE_URL = "http://localhost:8000";
 

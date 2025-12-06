@@ -21,4 +21,5 @@ export interface CommuteResult {
 
 export interface CommuteResponse {
   results: CommuteResult[];
+  home_location?: { lat: number; lng: number };
 }

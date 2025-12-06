@@ -24,72 +24,69 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", marginBottom: "0.5rem" }}>
-                    출발지 주소:
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    출발지 주소
                 </label>
                 <input
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-gray-50 focus:bg-white text-gray-900 placeholder-gray-400"
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="예: 서울시 강남구 테헤란로 123"
                     required
-                    style={{ width: "100%", padding: "0.5rem" }}
                 />
             </div>
 
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", marginBottom: "0.5rem" }}>
-                    이동 수단:
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    이동 수단
                 </label>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                    <label>
+                <div className="flex gap-4">
+                    <label className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl border cursor-pointer transition-all ${mode === 'transit' ? 'bg-blue-50 border-blue-500 text-blue-600 font-semibold' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                         <input
                             type="radio"
+                            name="mode"
                             value="transit"
                             checked={mode === "transit"}
                             onChange={(e) => setMode(e.target.value as TransportMode)}
+                            className="hidden"
                         />
-                        대중교통
+                        <span>대중교통</span>
                     </label>
-                    <label>
+                    <label className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl border cursor-pointer transition-all ${mode === 'car' ? 'bg-blue-50 border-blue-500 text-blue-600 font-semibold' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                         <input
                             type="radio"
+                            name="mode"
                             value="car"
                             checked={mode === "car"}
                             onChange={(e) => setMode(e.target.value as TransportMode)}
+                            className="hidden"
                         />
-                        자동차
+                        <span>자동차</span>
                     </label>
                 </div>
             </div>
 
-            <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", marginBottom: "0.5rem" }}>
-                    최대 통학 시간 (분, 선택사항):
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    최대 통학 시간 (분, 선택사항)
                 </label>
                 <input
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-gray-50 focus:bg-white text-gray-900 placeholder-gray-400"
                     type="number"
                     value={maxMinutes}
                     onChange={(e) => setMaxMinutes(e.target.value)}
                     placeholder="예: 60"
-                    style={{ width: "100%", padding: "0.5rem" }}
                 />
             </div>
 
             <button
                 type="submit"
-                style={{
-                    padding: "0.5rem 1rem",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                }}
+                className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-blue-500/30 active:scale-[0.98] transform"
             >
-                검색
+                검색하기
             </button>
         </form>
     );
