@@ -2,7 +2,7 @@
 
 import { CommuteResponse, University, TransportMode } from "./types/university";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export async function fetchUniversities(): Promise<University[]> {
   const res = await fetch(`${BASE_URL}/api/universities`);

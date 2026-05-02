@@ -1,6 +1,6 @@
 # backend/naver_client.py
 import os
-import requests
+import httpx
 from typing import Optional, Tuple
 from dotenv import load_dotenv
 
@@ -26,7 +26,7 @@ def get_geocode(address: str) -> Optional[Tuple[float, float]]:
     params = {"query": address}
 
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = httpx.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
 
@@ -87,7 +87,7 @@ def get_direction_duration(
     }
 
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = httpx.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
 

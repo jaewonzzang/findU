@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import UniversityList from "./pages/UniversityList";
@@ -6,27 +6,10 @@ import About from "./pages/About";
 import MinimalSearchBar from "./components/MinimalSearchBar";
 import FadeInList from "./components/FadeInList";
 import { useSearch } from "./hooks/useSearch";
-import { CommuteResult } from "./types/university";
 import "./index.css";
 
-// Home component wrapper to handle search state
 const Home = () => {
   const { search, results, loading } = useSearch();
-  const [mappedResults, setMappedResults] = useState<CommuteResult[]>([]);
-
-  useEffect(() => {
-    if (results) {
-      const mapped: CommuteResult[] = results.map((r) => ({
-        university_id: r.university.id,
-        university_name: r.university.name,
-        university_address: r.university.address,
-        duration_minutes: r.duration,
-        transport_mode: "transit", // Default or derived
-        route_summary: `Distance: ${r.distance}km`,
-      }));
-      setMappedResults(mapped);
-    }
-  }, [results]);
 
   return (
     <main className="pt-32 pb-20 px-6 max-w-2xl mx-auto flex flex-col items-center text-center">
@@ -44,7 +27,7 @@ const Home = () => {
       </div>
 
       <div className="w-full animate-fade-in-up delay-200">
-        <FadeInList results={mappedResults} />
+        <FadeInList results={results} />
       </div>
     </main>
   );
