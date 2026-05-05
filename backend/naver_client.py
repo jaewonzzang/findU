@@ -18,7 +18,7 @@ def get_geocode(address: str) -> Optional[Tuple[float, float]]:
         print("Naver API keys are missing.")
         return None
 
-    url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+    url = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
     headers = {
         "X-NCP-APIGW-API-KEY-ID": NAVER_CLIENT_ID,
         "X-NCP-APIGW-API-KEY": NAVER_CLIENT_SECRET,
@@ -64,13 +64,13 @@ def get_direction_duration(
 
     # 자동차 (Driving)
     if mode == "car":
-        url = "https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving"
+        url = "https://maps.apigw.ntruss.com/map-direction/v1/driving"
     else:
         # 대중교통 API는 별도 제휴가 필요하거나 복잡하므로,
         # 프로토타입에서는 자동차 경로(Driving)를 구해서 * 1.5배 하는 식으로 추정하거나
         # 혹은 TMAP 등 다른 API를 써야 함.
         # 여기서는 "자동차 시간 * 1.3 + 10분" 정도로 근사치를 계산하여 반환하는 전략 사용.
-        url = "https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving"
+        url = "https://maps.apigw.ntruss.com/map-direction/v1/driving"
 
     headers = {
         "X-NCP-APIGW-API-KEY-ID": NAVER_CLIENT_ID,
