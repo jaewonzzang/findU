@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { University } from "../types";
+import { CommuteResult, University } from "../types/university";
+import { BAND_COLOR, getCommuteBand } from "../utils/commute";
 
 declare global {
     interface Window {
@@ -10,10 +11,22 @@ declare global {
 interface MapContainerProps {
     homeLocation: { lat: number; lng: number } | null;
     universities: University[];
+    commuteResults: CommuteResult[] | null;
+    visibleUniversityIds: Set<string> | null;
     selectedUniversityId: string | null;
+    onSelectUniversity?: (id: string) => void;
 }
 
-const MapContainer = ({ homeLocation, universities, selectedUniversityId }: MapContainerProps) => {
+const NEUTRAL_COLOR = "#8B95A1";
+
+const MapContainer = ({
+    homeLocation,
+    universities,
+    commuteResults,
+    visibleUniversityIds,
+    selectedUniversityId,
+    onSelectUniversity,
+}: MapContainerProps) => {
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
@@ -21,69 +34,85 @@ const MapContainer = ({ homeLocation, universities, selectedUniversityId }: MapC
     useEffect(() => {
         if (!mapElement.current || !window.naver) return;
 
-        const location = new window.naver.maps.LatLng(37.5665, 126.9780); // Default: Seoul City Hall
-        const mapOptions = {
-            center: location,
+        const map = new window.naver.maps.Map(mapElement.current, {
+            center: new window.naver.maps.LatLng(37.5665, 126.9780),
             zoom: 11,
             zoomControl: true,
-        };
-
-        const map = new window.naver.maps.Map(mapElement.current, mapOptions);
+            zoomControlOptions: {
+                position: window.naver.maps.Position.TOP_RIGHT,
+            },
+        });
         mapRef.current = map;
     }, []);
 
-    // Update markers
     useEffect(() => {
         if (!mapRef.current || !window.naver) return;
 
-        // Clear existing markers
         markersRef.current.forEach((marker) => marker.setMap(null));
         markersRef.current = [];
 
         const map = mapRef.current;
+        const resultById = new Map(
+            (commuteResults ?? []).map((r) => [r.university_id, r])
+        );
 
-        // 1. Home Marker
         if (homeLocation) {
             const homeMarker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(homeLocation.lat, homeLocation.lng),
-                map: map,
+                map,
                 icon: {
-                    content: '<div style="background: #3182F6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"></div>',
+                    content:
+                        '<div style="background:#3182F6;width:20px;height:20px;border-radius:9999px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25)"></div>',
                     anchor: new window.naver.maps.Point(10, 10),
                 },
                 zIndex: 1000,
             });
             markersRef.current.push(homeMarker);
-
-            // Center map on home if it's the first time or explicitly requested (optional)
-            // For now, we'll fit bounds if we have results.
         }
 
-        // 2. University Markers
         universities.forEach((uni) => {
+            if (visibleUniversityIds && !visibleUniversityIds.has(uni.id)) return;
+
+            const result = resultById.get(uni.id);
             const isSelected = uni.id === selectedUniversityId;
+
+            const color = result
+                ? BAND_COLOR[getCommuteBand(result.duration_minutes)]
+                : NEUTRAL_COLOR;
+            const size = isSelected ? 26 : result ? 16 : 12;
+            const border = isSelected ? 4 : 2;
+            const half = size / 2;
+
+            const label = result
+                ? `<div style="position:absolute;top:${size + 4}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${result.duration_minutes}분</div>`
+                : "";
+
             const marker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(uni.lat, uni.lng),
-                map: map,
+                map,
                 title: uni.name,
                 icon: {
-                    content: isSelected
-                        ? '<div style="background: #EF4444; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.3);"></div>'
-                        : '<div style="background: #8B95A1; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
-                    anchor: isSelected ? new window.naver.maps.Point(12, 12) : new window.naver.maps.Point(6, 6),
+                    content: `<div style="position:relative"><div style="background:${color};width:${size}px;height:${size}px;border-radius:9999px;border:${border}px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer"></div>${label}</div>`,
+                    anchor: new window.naver.maps.Point(half, half),
                 },
-                zIndex: isSelected ? 999 : 100,
+                zIndex: isSelected ? 999 : result ? 200 : 100,
             });
+
+            if (onSelectUniversity) {
+                window.naver.maps.Event.addListener(marker, "click", () => {
+                    onSelectUniversity(uni.id);
+                });
+            }
+
             markersRef.current.push(marker);
 
             if (isSelected) {
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });
+    }, [homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity]);
 
-    }, [homeLocation, universities, selectedUniversityId]);
-
-    return <div ref={mapElement} style={{ width: "100%", height: "100%", minHeight: "400px" }} />;
+    return <div ref={mapElement} className="w-full h-full" />;
 };
 
 export default MapContainer;

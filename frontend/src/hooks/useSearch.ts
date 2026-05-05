@@ -1,10 +1,16 @@
-import { useState } from 'react';
-import { CommuteResult } from '../types/university';
+import { useState } from "react";
+import { CommuteResult } from "../types/university";
+
+interface HomeLocation {
+    lat: number;
+    lng: number;
+}
 
 export const useSearch = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [results, setResults] = useState<CommuteResult[]>([]);
+    const [results, setResults] = useState<CommuteResult[] | null>(null);
+    const [homeLocation, setHomeLocation] = useState<HomeLocation | null>(null);
 
     const search = async (address: string) => {
         setLoading(true);
@@ -12,30 +18,28 @@ export const useSearch = () => {
 
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/api/commute`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     address,
                     transport_mode: "transit",
-                    max_commute_minutes: 60,
+                    max_commute_minutes: null,
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error('Search failed');
-            }
+            if (!response.ok) throw new Error("Search failed");
 
             const data = await response.json();
             setResults(data.results);
+            setHomeLocation(data.home_location ?? null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
-            console.error(err);
+            setError(err instanceof Error ? err.message : "An error occurred");
+            setResults([]);
+            setHomeLocation(null);
         } finally {
             setLoading(false);
         }
     };
 
-    return { search, results, loading, error };
+    return { search, results, homeLocation, loading, error };
 };
