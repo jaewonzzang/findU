@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CommuteResult, University } from "../types/university";
 import { BAND_COLOR, getCommuteBand } from "../utils/commute";
+import { loadNaverMaps } from "../utils/naverMaps";
 
 declare global {
     interface Window {
@@ -30,23 +31,35 @@ const MapContainer = ({
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
+    const [mapReady, setMapReady] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!mapElement.current || !window.naver) return;
-
-        const map = new window.naver.maps.Map(mapElement.current, {
-            center: new window.naver.maps.LatLng(37.5665, 126.9780),
-            zoom: 11,
-            zoomControl: true,
-            zoomControlOptions: {
-                position: window.naver.maps.Position.TOP_RIGHT,
-            },
-        });
-        mapRef.current = map;
+        let cancelled = false;
+        loadNaverMaps()
+            .then(() => {
+                if (cancelled || !mapElement.current) return;
+                const map = new window.naver.maps.Map(mapElement.current, {
+                    center: new window.naver.maps.LatLng(37.5665, 126.9780),
+                    zoom: 11,
+                    zoomControl: true,
+                    zoomControlOptions: {
+                        position: window.naver.maps.Position.TOP_RIGHT,
+                    },
+                });
+                mapRef.current = map;
+                setMapReady(true);
+            })
+            .catch((err: Error) => {
+                if (!cancelled) setLoadError(err.message);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
-        if (!mapRef.current || !window.naver) return;
+        if (!mapReady || !mapRef.current) return;
 
         markersRef.current.forEach((marker) => marker.setMap(null));
         markersRef.current = [];
@@ -110,7 +123,15 @@ const MapContainer = ({
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });
-    }, [homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity]);
+    }, [mapReady, homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity]);
+
+    if (loadError) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-gray-50 text-sm text-gray-500 px-6 text-center">
+                지도를 불러오지 못했습니다. ({loadError})
+            </div>
+        );
+    }
 
     return <div ref={mapElement} className="w-full h-full" />;
 };
