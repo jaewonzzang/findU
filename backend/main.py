@@ -36,13 +36,13 @@ def get_universities():
 
 
 @app.post("/api/commute", response_model=CommuteResponse)
-def calculate_commute(request: CommuteRequest):
+async def calculate_commute(request: CommuteRequest):
     """
     집 주소 + 교통수단 + 최대 통학시간을 받아
     각 명문대까지의 통학 시간 결과를 반환.
     """
     try:
-        results, home_location = get_commute_results(
+        results, home_location = await get_commute_results(
             address=request.address,
             transport_mode=request.transport_mode,
             max_commute_minutes=request.max_commute_minutes,
