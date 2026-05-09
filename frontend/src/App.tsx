@@ -1,82 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation, type Location } from "react-router-dom";
 import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
-import MapContainer from "./components/MapContainer";
+import LeftSidebar from "./components/LeftSidebar";
+import RightSidebar from "./components/RightSidebar";
+import MinimalSearchBar from "./components/MinimalSearchBar";
 import UniversityList from "./pages/UniversityList";
+import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
-import { useSearch } from "./hooks/useSearch";
-import { fetchUniversities } from "./api";
-import { University } from "./types/university";
-import { ALL_REGIONS, Region, getRegion } from "./utils/region";
 import "./index.css";
 
 const Home = () => {
-    const { search, results, homeLocation, loading } = useSearch();
-
-    const [universities, setUniversities] = useState<University[]>([]);
-    const [maxMinutes, setMaxMinutes] = useState(120);
-    const [selectedRegions, setSelectedRegions] = useState<Set<Region>>(new Set(ALL_REGIONS));
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetchUniversities()
-            .then(setUniversities)
-            .catch((err) => console.error("Failed to load universities", err));
-    }, []);
-
-    const visibleIds = useMemo(() => {
-        const ids = new Set<string>();
-        const resultMap = new Map((results ?? []).map((r) => [r.university_id, r]));
-
-        for (const uni of universities) {
-            const region = getRegion(uni.address);
-            if (!region || !selectedRegions.has(region)) continue;
-
-            if (results) {
-                const r = resultMap.get(uni.id);
-                if (!r) continue;
-                if (maxMinutes < 120 && r.duration_minutes > maxMinutes) continue;
-            }
-
-            ids.add(uni.id);
-        }
-        return ids;
-    }, [universities, results, selectedRegions, maxMinutes]);
-
-    const handleRegionToggle = (region: Region) => {
-        setSelectedRegions((prev) => {
-            const next = new Set(prev);
-            if (next.has(region)) next.delete(region);
-            else next.add(region);
-            return next;
-        });
-    };
+    const [isResultVisible] = useState<boolean>(false);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-white">
-            <Sidebar
-                universities={universities}
-                results={results}
-                loading={loading}
-                onSearch={search}
-                maxMinutes={maxMinutes}
-                onMaxMinutesChange={setMaxMinutes}
-                selectedRegions={selectedRegions}
-                onRegionToggle={handleRegionToggle}
-                visibleIds={visibleIds}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-            />
-            <div className="flex-1 relative">
-                <MapContainer
-                    homeLocation={homeLocation}
-                    universities={universities}
-                    commuteResults={results}
-                    visibleUniversityIds={visibleIds}
-                    selectedUniversityId={selectedId}
-                    onSelectUniversity={setSelectedId}
-                />
+            <LeftSidebar />
+
+            <main className="flex-1 flex flex-col min-w-0">
+                <div className="fixed inset-0 -z-10 bg-gray-100">
+                    <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+                        지도 영역 (예정)
+                    </div>
+                </div>
+            </main>
+
+            <RightSidebar visible={isResultVisible} />
+
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-6 py-1">
+                <MinimalSearchBar onSearch={() => {}} />
             </div>
         </div>
     );
@@ -84,21 +35,38 @@ const Home = () => {
 
 const ConditionalHeader = () => {
     const location = useLocation();
-    if (location.pathname === "/") return null;
+    const state = location.state as { backgroundLocation?: Location } | null;
+    const effectivePath = state?.backgroundLocation?.pathname ?? location.pathname;
+    if (effectivePath === "/") return null;
     return <Header />;
+};
+
+const AppContent = () => {
+    const location = useLocation();
+    const state = location.state as { backgroundLocation?: Location } | null;
+    const backgroundLocation = state?.backgroundLocation;
+
+    return (
+        <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
+            <ConditionalHeader />
+            <Routes location={backgroundLocation || location}>
+                <Route path="/" element={<Home />} />
+                <Route path="/universities" element={<UniversityList />} />
+                <Route path="/about" element={<About />} />
+            </Routes>
+            {backgroundLocation && (
+                <Routes>
+                    <Route path="/universities" element={<UniversityListModal />} />
+                </Routes>
+            )}
+        </div>
+    );
 };
 
 function App() {
     return (
         <Router>
-            <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
-                <ConditionalHeader />
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/universities" element={<UniversityList />} />
-                    <Route path="/about" element={<About />} />
-                </Routes>
-            </div>
+            <AppContent />
         </Router>
     );
 }
