@@ -1,10 +1,13 @@
 # backend/naver_client.py
+import logging
 import os
 import httpx
 from typing import Optional, Tuple
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger("uvicorn.error")
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
@@ -16,7 +19,9 @@ async def get_geocode(client: httpx.AsyncClient, address: str) -> Optional[Tuple
     실패 시 None 반환.
     """
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
-        print("Naver API keys are missing.")
+        logger.error(
+            f"Naver API keys missing. ID set: {bool(NAVER_CLIENT_ID)}, Secret set: {bool(NAVER_CLIENT_SECRET)}"
+        )
         return None
 
     url = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode"
@@ -28,6 +33,9 @@ async def get_geocode(client: httpx.AsyncClient, address: str) -> Optional[Tuple
 
     try:
         response = await client.get(url, headers=headers, params=params)
+        logger.info(f"Geocoding response status: {response.status_code}")
+        if response.status_code != 200:
+            logger.error(f"Geocoding failed: {response.status_code} {response.text[:200]}")
         response.raise_for_status()
         data = response.json()
 
@@ -53,6 +61,9 @@ async def get_direction_duration(
     transit 모드는 driving 시간을 1.3배 + 15분으로 추산.
     """
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        logger.error(
+            f"Naver API keys missing (Directions). ID set: {bool(NAVER_CLIENT_ID)}, Secret set: {bool(NAVER_CLIENT_SECRET)}"
+        )
         return 0, "API Key Missing"
 
     url = "https://maps.apigw.ntruss.com/map-direction/v1/driving"
@@ -69,6 +80,9 @@ async def get_direction_duration(
 
     try:
         response = await client.get(url, headers=headers, params=params)
+        logger.info(f"Directions response status: {response.status_code}")
+        if response.status_code != 200:
+            logger.error(f"Directions failed: {response.status_code} {response.text[:200]}")
         response.raise_for_status()
         data = response.json()
 
