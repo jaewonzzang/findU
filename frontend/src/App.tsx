@@ -4,6 +4,7 @@ import Header from "./components/Header";
 import LeftSidebar from "./components/LeftSidebar";
 import RightSidebar from "./components/RightSidebar";
 import MinimalSearchBar from "./components/MinimalSearchBar";
+import MapContainer from "./components/MapContainer";
 import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
@@ -17,10 +18,14 @@ const Home = () => {
             <LeftSidebar />
 
             <main className="flex-1 flex flex-col min-w-0">
-                <div className="fixed inset-0 -z-10 bg-gray-100">
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                        지도 영역 (예정)
-                    </div>
+                <div className="fixed inset-0 -z-10">
+                    <MapContainer
+                        homeLocation={null}
+                        universities={[]}
+                        commuteResults={null}
+                        visibleUniversityIds={null}
+                        selectedUniversityId={null}
+                    />
                 </div>
             </main>
 
