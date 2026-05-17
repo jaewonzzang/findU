@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, type Location } from "react-router-dom";
 import Header from "./components/Header";
 import LeftSidebar from "./components/LeftSidebar";
@@ -8,21 +8,30 @@ import MapContainer from "./components/MapContainer";
 import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
+import { fetchUniversities } from "./api";
+import { useSearch } from "./hooks/useSearch";
+import type { University } from "./types/university";
 import "./index.css";
 
 const Home = () => {
     const [isResultVisible] = useState<boolean>(false);
+    const [universities, setUniversities] = useState<University[]>([]);
+    const { search, results, homeLocation, loading } = useSearch();
+
+    useEffect(() => {
+        fetchUniversities().then(setUniversities).catch(() => {});
+    }, []);
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-white">
+        <div className="flex h-screen w-screen overflow-hidden">
             <LeftSidebar />
 
             <main className="flex-1 flex flex-col min-w-0">
-                <div className="fixed inset-0 -z-10">
+                <div className="fixed inset-0">
                     <MapContainer
-                        homeLocation={null}
-                        universities={[]}
-                        commuteResults={null}
+                        homeLocation={homeLocation}
+                        universities={universities}
+                        commuteResults={results}
                         visibleUniversityIds={null}
                         selectedUniversityId={null}
                     />
@@ -32,7 +41,7 @@ const Home = () => {
             <RightSidebar visible={isResultVisible} />
 
             <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-6 py-1">
-                <MinimalSearchBar onSearch={() => {}} />
+                <MinimalSearchBar onSearch={search} loading={loading} />
             </div>
         </div>
     );
@@ -52,7 +61,7 @@ const AppContent = () => {
     const backgroundLocation = state?.backgroundLocation;
 
     return (
-        <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
+        <div className="min-h-screen text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
             <ConditionalHeader />
             <Routes location={backgroundLocation || location}>
                 <Route path="/" element={<Home />} />
