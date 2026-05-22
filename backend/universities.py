@@ -37,10 +37,10 @@ UNIVERSITIES: List[Dict] = sorted([
     {"id": "inha", "name": "인하대학교", "address": "인천광역시 미추홀구 인하로 100", "lat": 37.4494, "lng": 126.6534},
     {"id": "chungang_seoul", "name": "중앙대학교", "address": "서울특별시 동작구 흑석로 84", "lat": 37.5051, "lng": 126.9571},
     {"id": "chungang_davinci", "name": "중앙대학교", "address": "경기도 안성시 대덕면 서동대로 4726", "lat": 37.0004, "lng": 127.2287},
-    {"id": "hufs_seoul", "name": "한국외국어대학교", "address": "서울특별시 동대문구 이문로 107", "lat": 37.5648, "lng": 126.9394},
+    {"id": "hufs_seoul", "name": "한국외국어대학교", "address": "서울특별시 동대문구 이문로 107", "lat": 37.5973, "lng": 127.0583},
     {"id": "hufs_global", "name": "한국외국어대학교", "address": "경기도 용인시 처인구 모현읍 외대로 81", "lat": 37.3363, "lng": 127.2656},
     {"id": "hansung", "name": "한성대학교", "address": "서울특별시 성북구 삼선교로16길 116", "lat": 37.5824, "lng": 127.0104},
-    {"id": "hanyang_seoul", "name": "한양대학교", "address": "서울특별시 성동구 왕십리로 222", "lat": 37.5538, "lng": 127.0400},
+    {"id": "hanyang_seoul", "name": "한양대학교", "address": "서울특별시 성동구 왕십리로 222", "lat": 37.5576, "lng": 127.0467},
     {"id": "hanyang_erica", "name": "한양대학교", "address": "경기도 안산시 상록구 한양대학로 55", "lat": 37.2954, "lng": 126.8353},
     {"id": "hongik", "name": "홍익대학교", "address": "서울특별시 마포구 와우산로 94", "lat": 37.5515, "lng": 126.9250},
 ], key=lambda x: x["name"])
