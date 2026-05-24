@@ -55,16 +55,21 @@ async def get_direction_duration(
     end_lat: float,
     end_lng: float,
     mode: str = "transit",
-) -> Tuple[int, str]:
+) -> Optional[Tuple[int, str]]:
     """
     출발지 -> 도착지 소요시간(분) 및 경로 요약 반환.
     transit 모드는 driving 시간을 1.3배 + 15분으로 추산.
+
+    Returns:
+        Tuple[duration_min, summary]: NCP 정상 응답.
+            duration_min == 0도 정상 가능 (start ≈ goal로 NCP가 0초 반환하는 경우).
+        None: NCP 실패 (키 누락, HTTP 오류, code != 0, route empty, network/parse 예외).
     """
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         logger.error(
             f"Naver API keys missing (Directions). ID set: {bool(NAVER_CLIENT_ID)}, Secret set: {bool(NAVER_CLIENT_SECRET)}"
         )
-        return 0, "API Key Missing"
+        return None
 
     url = "https://maps.apigw.ntruss.com/map-direction/v1/driving"
     headers = {
@@ -96,7 +101,7 @@ async def get_direction_duration(
 
             return duration_min, f"차량 이동 약 {duration_min}분"
 
-        return 0, "경로 없음"
+        return None
     except Exception as e:
         print(f"Direction error: {e}")
-        return 0, "API Error"
+        return None

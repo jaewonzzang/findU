@@ -1,10 +1,11 @@
 # backend/commute_service.py
 
 import asyncio
-from typing import List, Tuple, Dict
+from typing import List, Optional, Tuple, Dict
 
 import httpx
 
+import commute_cache
 from universities import UNIVERSITIES
 from models import CommuteResult, TransportMode
 from naver_client import get_geocode, get_direction_duration
@@ -27,7 +28,7 @@ async def get_commute_results(
 ) -> Tuple[List[CommuteResult], Dict | None]:
     use_real_api = False
     start_lat = start_lng = 0.0
-    api_results: List[Tuple[int, str]] = []
+    api_results: List[Optional[Tuple[int, str]]] = [None for _ in UNIVERSITIES]
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         user_coords = await get_geocode(client, address)
@@ -35,26 +36,46 @@ async def get_commute_results(
 
         if use_real_api:
             start_lat, start_lng = user_coords
-            tasks = [
-                get_direction_duration(
-                    client,
-                    start_lat=start_lat,
-                    start_lng=start_lng,
-                    end_lat=uni["lat"],
-                    end_lng=uni["lng"],
-                    mode=transport_mode,
-                )
-                for uni in UNIVERSITIES
-            ]
-            api_results = await asyncio.gather(*tasks)
+
+            fetch_indices: List[int] = []
+            for idx, uni in enumerate(UNIVERSITIES):
+                cached = commute_cache.get(start_lat, start_lng, uni["id"], transport_mode)
+                if cached is not None:
+                    api_results[idx] = cached
+                else:
+                    fetch_indices.append(idx)
+
+            if fetch_indices:
+                tasks = [
+                    get_direction_duration(
+                        client,
+                        start_lat=start_lat,
+                        start_lng=start_lng,
+                        end_lat=UNIVERSITIES[idx]["lat"],
+                        end_lng=UNIVERSITIES[idx]["lng"],
+                        mode=transport_mode,
+                    )
+                    for idx in fetch_indices
+                ]
+                fetched = await asyncio.gather(*tasks)
+                for idx, value in zip(fetch_indices, fetched):
+                    api_results[idx] = value
+                    if value is not None:
+                        duration, summary = value
+                        commute_cache.put(
+                            start_lat, start_lng, UNIVERSITIES[idx]["id"], transport_mode, duration, summary
+                        )
 
     results: List[CommuteResult] = []
     for idx, uni in enumerate(UNIVERSITIES):
-        duration, summary = api_results[idx] if use_real_api else (0, "")
-
-        if duration == 0:
+        value = api_results[idx]
+        if value is None:
             duration = fake_duration_minutes(address, uni["name"], transport_mode)
             summary = f"{transport_mode} 기준 약 {duration}분 (예상)"
+            is_fallback = True
+        else:
+            duration, summary = value
+            is_fallback = False
 
         if max_commute_minutes is not None and duration > max_commute_minutes:
             continue
@@ -67,6 +88,7 @@ async def get_commute_results(
                 duration_minutes=duration,
                 transport_mode=transport_mode,
                 route_summary=summary,
+                is_fallback=is_fallback,
             )
         )
 

@@ -28,6 +28,7 @@ class CommuteResult(BaseModel):
     duration_minutes: int
     transport_mode: TransportMode
     route_summary: str
+    is_fallback: bool = False
 
 
 class HomeLocation(BaseModel):
