@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CommuteResult, University } from "../types/university";
-import { BAND_COLOR, getCommuteBand } from "../utils/commute";
+import { getCommuteColor } from "../utils/commute";
 import { loadNaverMaps } from "../utils/naverMaps";
 
 declare global {
@@ -16,6 +16,7 @@ interface MapContainerProps {
     visibleUniversityIds: Set<string> | null;
     selectedUniversityId: string | null;
     onSelectUniversity?: (id: string) => void;
+    maxMinutes: number;
 }
 
 const NEUTRAL_COLOR = "#8B95A1";
@@ -27,6 +28,7 @@ const MapContainer = ({
     visibleUniversityIds,
     selectedUniversityId,
     onSelectUniversity,
+    maxMinutes,
 }: MapContainerProps) => {
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
@@ -87,10 +89,12 @@ const MapContainer = ({
             if (visibleUniversityIds && !visibleUniversityIds.has(uni.id)) return;
 
             const result = resultById.get(uni.id);
+            if (result && result.duration_minutes > maxMinutes) return;
+
             const isSelected = uni.id === selectedUniversityId;
 
             const color = result
-                ? BAND_COLOR[getCommuteBand(result.duration_minutes)]
+                ? getCommuteColor(result.duration_minutes, maxMinutes)
                 : NEUTRAL_COLOR;
             const size = isSelected ? 26 : result ? 16 : 12;
             const border = isSelected ? 4 : 2;
@@ -123,7 +127,7 @@ const MapContainer = ({
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });
-    }, [mapReady, homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity]);
+    }, [mapReady, homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity, maxMinutes]);
 
     if (loadError) {
         return (

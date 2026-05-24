@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
@@ -9,14 +9,13 @@ const navItems = [
 const FLOATING_BOX =
     "bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg p-4";
 
-const LeftSidebar: React.FC = () => {
-    const location = useLocation();
-    const [maxMinutes, setMaxMinutes] = useState(60);
+interface LeftSidebarProps {
+    maxMinutes: number;
+    onMaxMinutesChange: (v: number) => void;
+}
 
-    const handleMaxMinutesChange = (v: number) => {
-        setMaxMinutes(v);
-        console.log("[filter] maxMinutes:", v);
-    };
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChange }) => {
+    const location = useLocation();
 
     return (
         <>
@@ -66,7 +65,7 @@ const LeftSidebar: React.FC = () => {
                     max={120}
                     step={5}
                     value={maxMinutes}
-                    onChange={(e) => handleMaxMinutesChange(Number(e.target.value))}
+                    onChange={(e) => onMaxMinutesChange(Number(e.target.value))}
                     className="w-full h-1 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand"
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1">

@@ -11,3 +11,13 @@ export const BAND_COLOR: Record<CommuteBand, string> = {
     medium: "#F59E0B",
     slow: "#EF4444",
 };
+
+export function getCommuteColor(durationMinutes: number, maxMinutes: number): string {
+    if (maxMinutes <= 0) return "hsl(120, 70%, 45%)";
+    const ratio = durationMinutes / maxMinutes;
+    if (ratio <= 0.5) return "hsl(120, 70%, 45%)";
+    if (ratio >= 0.9) return "hsl(0, 75%, 40%)";
+    const t = (ratio - 0.5) / 0.4;
+    const hue = 120 * (1 - t);
+    return `hsl(${hue.toFixed(1)}, 70%, 45%)`;
+}

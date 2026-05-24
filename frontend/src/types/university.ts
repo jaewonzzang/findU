@@ -17,6 +17,7 @@ export interface CommuteResult {
     duration_minutes: number;
     transport_mode: TransportMode;
     route_summary: string;
+    is_fallback?: boolean;
 }
 
 export interface CommuteResponse {

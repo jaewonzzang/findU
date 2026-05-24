@@ -16,6 +16,7 @@ import "./index.css";
 const Home = () => {
     const [isResultVisible] = useState<boolean>(false);
     const [universities, setUniversities] = useState<University[]>([]);
+    const [maxMinutes, setMaxMinutes] = useState<number>(60);
     const { search, results, homeLocation, loading } = useSearch();
 
     useEffect(() => {
@@ -24,7 +25,7 @@ const Home = () => {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden">
-            <LeftSidebar />
+            <LeftSidebar maxMinutes={maxMinutes} onMaxMinutesChange={setMaxMinutes} />
 
             <main className="flex-1 flex flex-col min-w-0">
                 <div className="fixed inset-0">
@@ -34,6 +35,7 @@ const Home = () => {
                         commuteResults={results}
                         visibleUniversityIds={null}
                         selectedUniversityId={null}
+                        maxMinutes={maxMinutes}
                     />
                 </div>
             </main>
