@@ -7,7 +7,7 @@ const navItems = [
 ];
 
 const FLOATING_BOX =
-    "bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg p-4";
+    "bg-white/20 backdrop-blur-xl hover:bg-white/90 focus-within:bg-white/90 transition-colors duration-200 rounded-2xl shadow-lg p-4";
 
 interface LeftSidebarProps {
     maxMinutes: number;
