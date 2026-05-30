@@ -37,6 +37,10 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
+    const infoWindowRef = useRef<any>(null);
+    const openInfoIdRef = useRef<string | null>(null);
+    const pinnedIdRef = useRef<string | null>(null);
+    const listenersRef = useRef<any[]>([]);
     const [mapReady, setMapReady] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -46,11 +50,17 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 mapRef.current.setCenter(new window.naver.maps.LatLng(37.5665, 126.9780));
                 mapRef.current.setZoom(11);
             }
+            if (infoWindowRef.current) {
+                infoWindowRef.current.close();
+                openInfoIdRef.current = null;
+                pinnedIdRef.current = null;
+            }
         },
     }), []);
 
     useEffect(() => {
         let cancelled = false;
+        let mapClickHandle: any = null;
         loadNaverMaps()
             .then(() => {
                 if (cancelled || !mapElement.current) return;
@@ -63,6 +73,20 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                     },
                 });
                 mapRef.current = map;
+                infoWindowRef.current = new window.naver.maps.InfoWindow({
+                    content: "",
+                    borderWidth: 0,
+                    backgroundColor: "transparent",
+                    disableAnchor: true,
+                    pixelOffset: new window.naver.maps.Point(0, -10),
+                });
+                mapClickHandle = window.naver.maps.Event.addListener(map, "click", () => {
+                    if (infoWindowRef.current && (openInfoIdRef.current || pinnedIdRef.current)) {
+                        infoWindowRef.current.close();
+                        openInfoIdRef.current = null;
+                        pinnedIdRef.current = null;
+                    }
+                });
                 setMapReady(true);
             })
             .catch((err: Error) => {
@@ -70,14 +94,27 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             });
         return () => {
             cancelled = true;
+            if (mapClickHandle) {
+                window.naver.maps.Event.removeListener(mapClickHandle);
+            }
+            if (infoWindowRef.current) {
+                infoWindowRef.current.close();
+            }
         };
     }, []);
 
     useEffect(() => {
         if (!mapReady || !mapRef.current) return;
 
+        listenersRef.current.forEach((h) => window.naver.maps.Event.removeListener(h));
+        listenersRef.current = [];
         markersRef.current.forEach((marker) => marker.setMap(null));
         markersRef.current = [];
+        if (infoWindowRef.current) {
+            infoWindowRef.current.close();
+            openInfoIdRef.current = null;
+            pinnedIdRef.current = null;
+        }
 
         const map = mapRef.current;
         const resultById = new Map(
@@ -128,10 +165,50 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 zIndex: isSelected ? 999 : result ? 200 : 100,
             });
 
+            const showInfo = () => {
+                infoWindowRef.current.setContent(
+                    `<div style="position:relative;background:white;color:#1f2937;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap">${uni.name}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:white;box-shadow:2px 2px 4px rgba(0,0,0,0.06)"></div></div>`
+                );
+                infoWindowRef.current.open(mapRef.current, marker);
+            };
+
+            const mouseoverHandle = window.naver.maps.Event.addListener(marker, "mouseover", () => {
+                if (!infoWindowRef.current || !mapRef.current) return;
+                if (pinnedIdRef.current !== null) return;
+                if (openInfoIdRef.current === uni.id) return;
+                showInfo();
+                openInfoIdRef.current = uni.id;
+            });
+            listenersRef.current.push(mouseoverHandle);
+
+            const mouseoutHandle = window.naver.maps.Event.addListener(marker, "mouseout", () => {
+                if (!infoWindowRef.current) return;
+                if (pinnedIdRef.current === uni.id) return;
+                if (openInfoIdRef.current !== uni.id) return;
+                infoWindowRef.current.close();
+                openInfoIdRef.current = null;
+            });
+            listenersRef.current.push(mouseoutHandle);
+
+            const infoClickHandle = window.naver.maps.Event.addListener(marker, "click", () => {
+                if (!infoWindowRef.current || !mapRef.current) return;
+                if (pinnedIdRef.current === uni.id) {
+                    infoWindowRef.current.close();
+                    pinnedIdRef.current = null;
+                    openInfoIdRef.current = null;
+                } else {
+                    showInfo();
+                    pinnedIdRef.current = uni.id;
+                    openInfoIdRef.current = uni.id;
+                }
+            });
+            listenersRef.current.push(infoClickHandle);
+
             if (onSelectUniversity) {
-                window.naver.maps.Event.addListener(marker, "click", () => {
+                const selectHandle = window.naver.maps.Event.addListener(marker, "click", () => {
                     onSelectUniversity(uni.id);
                 });
+                listenersRef.current.push(selectHandle);
             }
 
             markersRef.current.push(marker);
