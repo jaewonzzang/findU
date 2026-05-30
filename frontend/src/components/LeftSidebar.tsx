@@ -12,18 +12,23 @@ const FLOATING_BOX =
 interface LeftSidebarProps {
     maxMinutes: number;
     onMaxMinutesChange: (v: number) => void;
+    onLogoClick: () => void;
 }
 
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChange }) => {
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChange, onLogoClick }) => {
     const location = useLocation();
 
     return (
         <>
             {/* Box A — Logo */}
             <div className={`hidden md:block fixed top-4 left-4 z-20 w-fit ${FLOATING_BOX}`}>
-                <Link to="/" className="text-xl font-bold tracking-tighter text-brand">
+                <button
+                    type="button"
+                    onClick={onLogoClick}
+                    className="text-xl font-bold tracking-tighter text-brand bg-transparent p-0 cursor-pointer"
+                >
                     findU
-                </Link>
+                </button>
             </div>
 
             {/* Box B — Nav */}

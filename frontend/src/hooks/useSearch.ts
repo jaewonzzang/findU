@@ -12,6 +12,13 @@ export const useSearch = () => {
     const [results, setResults] = useState<CommuteResult[] | null>(null);
     const [homeLocation, setHomeLocation] = useState<HomeLocation | null>(null);
 
+    const reset = () => {
+        setResults(null);
+        setHomeLocation(null);
+        setError(null);
+        setLoading(false);
+    };
+
     const search = async (address: string) => {
         setLoading(true);
         setError(null);
@@ -41,5 +48,5 @@ export const useSearch = () => {
         }
     };
 
-    return { search, results, homeLocation, loading, error };
+    return { search, reset, results, homeLocation, loading, error };
 };

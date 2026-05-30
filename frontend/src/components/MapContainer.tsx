@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { CommuteResult, University } from "../types/university";
 import { getCommuteColor } from "../utils/commute";
 import { loadNaverMaps } from "../utils/naverMaps";
@@ -19,9 +19,13 @@ interface MapContainerProps {
     maxMinutes: number;
 }
 
+export interface MapContainerHandle {
+    resetView: () => void;
+}
+
 const NEUTRAL_COLOR = "#8B95A1";
 
-const MapContainer = ({
+const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     homeLocation,
     universities,
     commuteResults,
@@ -29,12 +33,21 @@ const MapContainer = ({
     selectedUniversityId,
     onSelectUniversity,
     maxMinutes,
-}: MapContainerProps) => {
+}, ref) => {
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
     const [mapReady, setMapReady] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
+
+    useImperativeHandle(ref, () => ({
+        resetView: () => {
+            if (mapRef.current) {
+                mapRef.current.setCenter(new window.naver.maps.LatLng(37.5665, 126.9780));
+                mapRef.current.setZoom(11);
+            }
+        },
+    }), []);
 
     useEffect(() => {
         let cancelled = false;
@@ -138,6 +151,6 @@ const MapContainer = ({
     }
 
     return <div ref={mapElement} className="w-full h-full" />;
-};
+});
 
 export default MapContainer;

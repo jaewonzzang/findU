@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, type Location } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, type Location } from "react-router-dom";
 import Header from "./components/Header";
 import LeftSidebar from "./components/LeftSidebar";
 import RightSidebar from "./components/RightSidebar";
 import MinimalSearchBar from "./components/MinimalSearchBar";
-import MapContainer from "./components/MapContainer";
+import MapContainer, { type MapContainerHandle } from "./components/MapContainer";
 import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
@@ -17,19 +17,31 @@ const Home = () => {
     const [isResultVisible] = useState<boolean>(false);
     const [universities, setUniversities] = useState<University[]>([]);
     const [maxMinutes, setMaxMinutes] = useState<number>(60);
-    const { search, results, homeLocation, loading } = useSearch();
+    const [resetKey, setResetKey] = useState<number>(0);
+    const { search, reset, results, homeLocation, loading } = useSearch();
+    const mapRef = useRef<MapContainerHandle | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchUniversities().then(setUniversities).catch(() => {});
     }, []);
 
+    const handleReset = () => {
+        reset();
+        setMaxMinutes(60);
+        setResetKey((k) => k + 1);
+        mapRef.current?.resetView();
+        navigate("/", { state: null, replace: true });
+    };
+
     return (
         <div className="flex h-screen w-screen overflow-hidden">
-            <LeftSidebar maxMinutes={maxMinutes} onMaxMinutesChange={setMaxMinutes} />
+            <LeftSidebar maxMinutes={maxMinutes} onMaxMinutesChange={setMaxMinutes} onLogoClick={handleReset} />
 
             <main className="flex-1 flex flex-col min-w-0">
                 <div className="fixed inset-0">
                     <MapContainer
+                        ref={mapRef}
                         homeLocation={homeLocation}
                         universities={universities}
                         commuteResults={results}
@@ -43,7 +55,7 @@ const Home = () => {
             <RightSidebar visible={isResultVisible} />
 
             <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-6 py-1">
-                <MinimalSearchBar onSearch={search} loading={loading} />
+                <MinimalSearchBar key={resetKey} onSearch={search} loading={loading} />
             </div>
         </div>
     );
