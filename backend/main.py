@@ -2,12 +2,14 @@
 
 import os
 
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import CommuteRequest, CommuteResponse, University
 from universities import UNIVERSITIES
 from commute_service import get_commute_results
+from kakao_client import search_keyword, KakaoKeyMissingError
 
 app = FastAPI(title="findU Prototype API")
 
@@ -51,6 +53,27 @@ async def calculate_commute(request: CommuteRequest):
     except Exception as e:
         print(f"Error calculating commute: {e}")
         return CommuteResponse(results=[], home_location=None)
+
+
+@app.get("/api/autocomplete")
+async def autocomplete(query: str = ""):
+    """
+    Kakao 로컬 키워드 검색 프록시.
+    검색어가 2글자 미만이면 Kakao를 호출하지 않고 빈 리스트 반환(쿼터 절약).
+    각 후보: {name, address, lat, lng} (lat=Kakao y, lng=Kakao x).
+    """
+    if len(query.strip()) < 2:
+        return []
+
+    try:
+        return await search_keyword(query.strip())
+    except KakaoKeyMissingError:
+        raise HTTPException(status_code=500, detail="KAKAO_REST_API_KEY not configured")
+    except (httpx.HTTPStatusError, httpx.RequestError) as e:
+        # Kakao 비정상 응답/네트워크 오류는 빈 결과로 처리해
+        # 프론트 자동완성이 조용히 비도록 함(검색 흐름 차단 방지).
+        print(f"Kakao autocomplete error: {e}")
+        return []
 
 
 @app.get("/")
