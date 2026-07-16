@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import AuthButton from "./AuthButton";
 
 const Header: React.FC = () => {
     const location = useLocation();
@@ -24,6 +25,7 @@ const Header: React.FC = () => {
                     <Link to="/about" className={isActive("/about")}>
                         about
                     </Link>
+                    <AuthButton />
                 </nav>
             </div>
         </header>
