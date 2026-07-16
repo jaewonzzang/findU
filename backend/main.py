@@ -5,11 +5,13 @@ import os
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from models import CommuteRequest, CommuteResponse, University
 from universities import UNIVERSITIES
 from commute_service import get_commute_results
 from kakao_client import search_keyword, KakaoKeyMissingError
+from auth import router as auth_router
 
 app = FastAPI(title="findU Prototype API")
 
@@ -26,6 +28,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 배포(프론트/백엔드 도메인 분리) 시 SESSION_SAMESITE=none 필요(https 전제).
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "dev-insecure-change-me"),
+    same_site=os.getenv("SESSION_SAMESITE", "lax"),
+    https_only=os.getenv("SESSION_SAMESITE", "lax") == "none",
+)
+
+app.include_router(auth_router)
 
 
 @app.get("/api/universities", response_model=list[University])

@@ -24,27 +24,35 @@ npm run build
 ```
 
 ### Environment Variables
-The backend requires a `.env` file in `backend/`:
+The backend requires a `.env` file in `backend/` (see `.env.example` for the full list):
 ```
 NAVER_CLIENT_ID=...
 NAVER_CLIENT_SECRET=...
+KAKAO_REST_API_KEY=...   # autocomplete + Kakao OAuth login
+SESSION_SECRET=...       # signs the session cookie
 ```
-Without these, the app falls back to fake commute times (driving time × 1.3 + 15 min).
+Without the Naver keys, the app falls back to fake commute times (driving time × 1.3 + 15 min).
+Kakao OAuth setup steps: `docs/kakao-oauth-setup.md`.
 
 ## Architecture
 
 ### Backend (`backend/`)
 | File | Role |
 |---|---|
-| `main.py` | FastAPI app, CORS config, two endpoints |
+| `main.py` | FastAPI app, CORS + session middleware, core endpoints |
 | `models.py` | Pydantic models: `SearchRequest`, `SearchResponse`, `University` |
 | `commute_service.py` | Orchestrates geocoding + route calculation for all universities |
 | `naver_client.py` | Naver Geocoding API + Naver Directions 5 API calls |
+| `kakao_client.py` | Kakao local keyword search (autocomplete proxy) |
+| `auth.py` | Kakao OAuth login (session-cookie based) |
 | `universities.py` / `universities.json` | Static list of ~20 Seoul/metro-area universities |
 
 **API endpoints:**
 - `GET /api/universities` — returns the static university list
 - `POST /api/commute` — takes `{ address, transport_mode, max_time }`, returns universities sorted by commute time
+- `GET /api/autocomplete?query=` — Kakao keyword search proxy
+- `GET /api/auth/kakao/login` / `GET /api/auth/kakao/callback` — Kakao OAuth flow
+- `GET /api/auth/me` (401 when logged out) / `POST /api/auth/logout`
 
 Transit time is mocked (no dedicated Naver transit API): `driving_minutes * 1.3 + 15`.
 
@@ -53,6 +61,7 @@ Transit time is mocked (no dedicated Naver transit API): `driving_minutes * 1.3 
 |---|---|
 | `App.tsx` | React Router setup (`/`, `/universities`, `/about`) |
 | `hooks/useSearch.ts` | Central search state and API call logic |
+| `hooks/useAuth.ts` | Login state via `/api/auth/me`, login/logout actions |
 | `api.ts` | `fetch` wrappers for backend endpoints |
 | `types/university.ts` | Shared TypeScript interfaces |
 | `components/` | UI components (SearchForm, ResultList, MapContainer, etc.) |
