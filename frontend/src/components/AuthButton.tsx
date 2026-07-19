@@ -25,12 +25,19 @@ const AuthButton: React.FC = () => {
 
     return (
         <div className="flex items-center gap-2 text-sm">
-            {user.profile_image && (
+            {user.profile_image ? (
                 <img
                     src={user.profile_image}
                     alt=""
                     className="h-7 w-7 rounded-full object-cover"
                 />
+            ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200">
+                    {/* 기본 아바타 */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#9ca3af" aria-hidden>
+                        <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.3 0-9.8 1.7-9.8 4.9v2.5h19.6v-2.5c0-3.2-6.5-4.9-9.8-4.9z" />
+                    </svg>
+                </span>
             )}
             <span className="font-medium text-gray-900">{user.nickname}</span>
             <button

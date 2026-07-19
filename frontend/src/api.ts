@@ -2,7 +2,8 @@
 
 import { CommuteResponse, University, TransportMode } from "./types/university";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+// 미설정 시 상대 경로 → 같은 도메인(Vercel rewrite 프록시)으로 요청
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 export async function fetchUniversities(): Promise<University[]> {
   const res = await fetch(`${BASE_URL}/api/universities`);
