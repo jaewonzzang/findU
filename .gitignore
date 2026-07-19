@@ -70,6 +70,10 @@ Desktop.ini
 ########################################
 # Misc
 ########################################
+# Claude Code project instructions (local only)
+CLAUDE.md
+everything-claude-code/
+
 # temporary files
 tmp/
 temp/
