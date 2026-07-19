@@ -4,9 +4,9 @@
 
 **Live**: https://find-u-iota.vercel.app/
 
-## 데모
+## 주요 화면
 
-![데모](docs/demo.gif)
+![주요 화면](docs/demo.gif)
 
 ## 문제 & 해결
 
@@ -73,16 +73,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload   # http://localhost:8000
 ```
 
-`backend/.env` 파일이 필요하다(전체 목록은 `backend/.env.example` 참고):
-
-```
-NAVER_CLIENT_ID=...
-NAVER_CLIENT_SECRET=...
-KAKAO_REST_API_KEY=...   # 자동완성 + Kakao OAuth
-SESSION_SECRET=...       # 세션 쿠키 서명
-```
-
-Naver 키가 없으면 추정 통학 시간으로 폴백해 동작한다. Kakao OAuth 설정 절차는 `docs/kakao-oauth-setup.md` 참고.
+환경 변수: `backend/.env.example` 참고. Kakao OAuth 설정 절차는 `docs/kakao-oauth-setup.md`.
 
 ### Frontend (React + Vite)
 
@@ -93,4 +84,4 @@ npm run dev     # http://localhost:5173
 npm run build
 ```
 
-지도 렌더링에는 `VITE_NAVER_MAP_CLIENT_ID` 환경 변수가 필요하다.
+환경 변수: `VITE_NAVER_MAP_CLIENT_ID` (Naver Maps JS SDK)
