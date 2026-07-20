@@ -1,11 +1,11 @@
 import React from "react";
 import { UNIVERSITIES } from "../data/universities";
 import { useAuth } from "../hooks/useAuth";
-import { useFavoriteUniversities } from "../hooks/useFavorites";
+import { useFavorites } from "../hooks/useFavorites";
 
 const UniversityList: React.FC = () => {
     const { user } = useAuth();
-    const { favoriteIds, toggle } = useFavoriteUniversities(!!user);
+    const { favoriteIds, toggle } = useFavorites();
 
     return (
         <div className="max-w-3xl mx-auto px-6 py-20">

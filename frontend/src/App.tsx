@@ -13,7 +13,7 @@ import SavedAddresses from "./components/SavedAddresses";
 import { fetchUniversities } from "./api";
 import { useSearch } from "./hooks/useSearch";
 import { useAuth } from "./hooks/useAuth";
-import { useSavedAddresses } from "./hooks/useFavorites";
+import { FavoritesProvider, useFavorites } from "./hooks/useFavorites";
 import type { University } from "./types/university";
 import "./index.css";
 
@@ -24,7 +24,7 @@ const Home = () => {
     const [resetKey, setResetKey] = useState<number>(0);
     const { search, reset, results, homeLocation, loading, error } = useSearch();
     const { user } = useAuth();
-    const { addresses, save, remove } = useSavedAddresses(!!user);
+    const { addresses, save, remove } = useFavorites();
     const [lastAddress, setLastAddress] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const mapRef = useRef<MapContainerHandle | null>(null);
@@ -142,21 +142,24 @@ const AppContent = () => {
     const location = useLocation();
     const state = location.state as { backgroundLocation?: Location } | null;
     const backgroundLocation = state?.backgroundLocation;
+    const { user } = useAuth();
 
     return (
-        <div className="min-h-screen text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
-            <ConditionalHeader />
-            <Routes location={backgroundLocation || location}>
-                <Route path="/" element={<Home />} />
-                <Route path="/universities" element={<UniversityList />} />
-                <Route path="/about" element={<About />} />
-            </Routes>
-            {backgroundLocation && (
-                <Routes>
-                    <Route path="/universities" element={<UniversityListModal />} />
+        <FavoritesProvider enabled={!!user}>
+            <div className="min-h-screen text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
+                <ConditionalHeader />
+                <Routes location={backgroundLocation || location}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/universities" element={<UniversityList />} />
+                    <Route path="/about" element={<About />} />
                 </Routes>
-            )}
-        </div>
+                {backgroundLocation && (
+                    <Routes>
+                        <Route path="/universities" element={<UniversityListModal />} />
+                    </Routes>
+                )}
+            </div>
+        </FavoritesProvider>
     );
 };
 
