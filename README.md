@@ -1,5 +1,7 @@
 # findU
 
+[![CI](https://github.com/jaewonzzang/findU/actions/workflows/ci.yml/badge.svg)](https://github.com/jaewonzzang/findU/actions/workflows/ci.yml)
+
 집 주소 하나로, 수도권 38개 대학까지의 실제 통학 시간을 계산해 가까운 순으로 보여주는 웹 앱.
 
 **Live**: https://find-u-iota.vercel.app/
@@ -48,7 +50,7 @@ POST /api/commute
 최대 통학시간 필터 → 시간순 정렬 → 프론트에서 지도 마커 + 애니메이션 리스트 렌더링
 ```
 
-- API 키가 없거나 외부 API가 실패하면 추정치로 폴백하고, 결과에 `is_fallback` 플래그를 붙여 실측/추정을 구분한다.
+- API 키가 없거나 외부 API가 실패하면 추정치로 폴백하고, 결과에 `is_fallback` 플래그를 붙여 실측/추정을 구분한다. 반면 주소 매칭 결과가 0건인 경우(사용자 입력 오류)는 폴백하지 않고 404와 안내 메시지를 반환한다.
 - Kakao OAuth 로그인은 세션 쿠키 기반이며, state 파라미터로 CSRF를 방어한다.
 
 **배포**: 프론트엔드는 Vercel, 백엔드는 Railway에 배포되어 있다.
@@ -74,6 +76,16 @@ uvicorn main:app --reload   # http://localhost:8000
 ```
 
 환경 변수: `backend/.env.example` 참고. Kakao OAuth 설정 절차는 `docs/kakao-oauth-setup.md`.
+
+테스트:
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest tests
+```
+
+캐시 격자 공유/주간 초기화, 대중교통 추산식, `/api/commute` 성공·폴백·주소없음(404) 경로를 커버한다. 백엔드 테스트와 프론트엔드 빌드는 GitHub Actions CI로 매 push마다 검증된다.
 
 ### Frontend (React + Vite)
 
