@@ -11,6 +11,7 @@ from models import CommuteRequest, CommuteResponse, University
 from universities import UNIVERSITIES
 from commute_service import get_commute_results
 from kakao_client import search_keyword, KakaoKeyMissingError
+from naver_client import AddressNotFoundError
 from auth import router as auth_router
 
 app = FastAPI(title="findU Prototype API")
@@ -61,10 +62,12 @@ async def calculate_commute(request: CommuteRequest):
             transport_mode=request.transport_mode,
             max_commute_minutes=request.max_commute_minutes,
         )
-        return CommuteResponse(results=results, home_location=home_location)
-    except Exception as e:
-        print(f"Error calculating commute: {e}")
-        return CommuteResponse(results=[], home_location=None)
+    except AddressNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="주소를 찾을 수 없어요. 도로명 주소나 지번 주소를 다시 확인해 주세요.",
+        )
+    return CommuteResponse(results=results, home_location=home_location)
 
 
 @app.get("/api/autocomplete")

@@ -31,7 +31,11 @@ export async function fetchCommute(
   });
 
   if (!res.ok) {
-    throw new Error("Failed to calculate commute");
+    const detail = await res
+      .json()
+      .then((body) => (typeof body?.detail === "string" ? body.detail : null))
+      .catch(() => null);
+    throw new Error(detail ?? "통학 시간 계산에 실패했어요. 잠시 후 다시 시도해 주세요.");
   }
 
   return res.json();

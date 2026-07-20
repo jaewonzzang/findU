@@ -13,10 +13,16 @@ NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
 
+class AddressNotFoundError(Exception):
+    """Geocoding API가 정상 응답했지만 매칭되는 주소가 없는 경우."""
+
+
 async def get_geocode(client: httpx.AsyncClient, address: str) -> Optional[Tuple[float, float]]:
     """
     주소를 입력받아 (lat, lng) 튜플을 반환.
-    실패 시 None 반환.
+
+    - None: API를 쓸 수 없는 경우(키 누락, HTTP/네트워크 오류) → 호출부에서 추정치 폴백.
+    - AddressNotFoundError: API는 정상 응답했지만 주소 매칭 결과가 0건 → 사용자 입력 오류.
     """
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         logger.error(
@@ -38,14 +44,14 @@ async def get_geocode(client: httpx.AsyncClient, address: str) -> Optional[Tuple
             logger.error(f"Geocoding failed: {response.status_code} {response.text[:200]}")
         response.raise_for_status()
         data = response.json()
-
-        if data.get("addresses"):
-            first_result = data["addresses"][0]
-            return float(first_result["y"]), float(first_result["x"])
-        return None
     except Exception as e:
-        print(f"Geocoding error for {address}: {e}")
+        logger.error(f"Geocoding error for {address}: {e}")
         return None
+
+    if data.get("addresses"):
+        first_result = data["addresses"][0]
+        return float(first_result["y"]), float(first_result["x"])
+    raise AddressNotFoundError(address)
 
 
 async def get_direction_duration(
@@ -103,5 +109,5 @@ async def get_direction_duration(
 
         return None
     except Exception as e:
-        print(f"Direction error: {e}")
+        logger.error(f"Direction error: {e}")
         return None

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CommuteResult } from "../types/university";
+import { fetchCommute } from "../api";
 
 interface HomeLocation {
     lat: number;
@@ -24,24 +25,16 @@ export const useSearch = () => {
         setError(null);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/commute`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    address,
-                    transport_mode: "transit",
-                    max_commute_minutes: null,
-                }),
-            });
-
-            if (!response.ok) throw new Error("Search failed");
-
-            const data = await response.json();
+            const data = await fetchCommute(address, "transit", null);
             setResults(data.results);
             setHomeLocation(data.home_location ?? null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "An error occurred");
-            setResults([]);
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "통학 시간 계산에 실패했어요. 잠시 후 다시 시도해 주세요."
+            );
+            setResults(null);
             setHomeLocation(null);
         } finally {
             setLoading(false);

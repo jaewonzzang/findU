@@ -19,7 +19,7 @@ const Home = () => {
     const [universities, setUniversities] = useState<University[]>([]);
     const [maxMinutes, setMaxMinutes] = useState<number>(60);
     const [resetKey, setResetKey] = useState<number>(0);
-    const { search, reset, results, homeLocation, loading } = useSearch();
+    const { search, reset, results, homeLocation, loading, error } = useSearch();
     const mapRef = useRef<MapContainerHandle | null>(null);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -79,6 +79,12 @@ const Home = () => {
             {loginFailed && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-20 rounded-xl bg-red-500/90 px-4 py-2 text-sm text-white shadow-lg">
                     카카오 로그인에 실패했어요. 다시 시도해 주세요.
+                </div>
+            )}
+
+            {error && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-20 rounded-xl bg-red-500/90 px-4 py-2 text-sm text-white shadow-lg">
+                    {error}
                 </div>
             )}
         </div>
