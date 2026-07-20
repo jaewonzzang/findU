@@ -38,6 +38,8 @@ app.add_middleware(
     secret_key=os.getenv("SESSION_SECRET", "dev-insecure-change-me"),
     same_site=os.getenv("SESSION_SAMESITE", "lax"),
     https_only=os.getenv("SESSION_SAMESITE", "lax") == "none",
+    # 쿠키 수명과 서명 만료를 함께 제한한다. 기본 5분이라 방치된 세션은 알아서 끊긴다.
+    max_age=int(os.getenv("SESSION_MAX_AGE", "300")),
 )
 
 app.include_router(auth_router)

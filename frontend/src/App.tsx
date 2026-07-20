@@ -10,6 +10,7 @@ import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
 import SavedAddresses from "./components/SavedAddresses";
+import CookieConsent from "./components/CookieConsent";
 import { fetchUniversities } from "./api";
 import { useSearch } from "./hooks/useSearch";
 import { useAuth } from "./hooks/useAuth";
@@ -149,6 +150,7 @@ const AppContent = () => {
     return (
         <FavoritesProvider enabled={!!user}>
             <div className="min-h-screen text-gray-900 font-sans selection:bg-brand/10 selection:text-brand">
+                <CookieConsent />
                 <ConditionalHeader />
                 <Routes location={backgroundLocation || location}>
                     <Route path="/" element={<Home />} />

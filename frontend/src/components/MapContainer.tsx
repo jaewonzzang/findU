@@ -28,10 +28,10 @@ export interface MapContainerHandle {
 
 const NEUTRAL_COLOR = "#8B95A1";
 const SAVED_ADDRESS_COLOR = "#F59E0B";
-const FAVORITE_COLOR = "#EF4444";
 
-// 저장 주소가 지금 검색한 집 위치와 사실상 같은 지점이면 마커가 겹쳐 보이므로 하나만 그린다(약 30m).
-const SAME_POINT_EPSILON = 3e-4;
+// 학사모 — 관심 대학 마커 안에 넣는다.
+const GRADUATION_CAP =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="white" aria-hidden><path d="M12 3 1 8.5l11 5.5 9-4.5V16h2V8.5L12 3zM5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8l-7 3.5-7-3.5z"/></svg>';
 
 const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     homeLocation,
@@ -145,23 +145,18 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             markersRef.current.push(homeMarker);
         }
 
+        // 핀 끝을 좌표에 맞춰 본체가 위로 서게 한다. 저장 주소를 그대로 검색해도
+        // 좌표가 같은 파란 집 마커를 가리지 않고 위아래로 나란히 보인다.
         (savedAddresses ?? []).forEach((saved) => {
             if (saved.lat === null || saved.lng === null) return;
-            if (
-                homeLocation &&
-                Math.abs(homeLocation.lat - saved.lat) < SAME_POINT_EPSILON &&
-                Math.abs(homeLocation.lng - saved.lng) < SAME_POINT_EPSILON
-            ) {
-                return;
-            }
 
             const savedMarker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(saved.lat, saved.lng),
                 map,
                 title: saved.address,
                 icon: {
-                    content: `<div style="display:flex;align-items:center;justify-content:center;background:${SAVED_ADDRESS_COLOR};width:22px;height:22px;border-radius:9999px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:white;font-size:11px;line-height:1">★</div>`,
-                    anchor: new window.naver.maps.Point(11, 11),
+                    content: `<div style="position:relative;width:26px;height:32px"><div style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;background:${SAVED_ADDRESS_COLOR};border:3px solid white;border-radius:9999px;box-shadow:0 2px 6px rgba(0,0,0,0.3);color:white;font-size:12px;line-height:1">★</div><div style="position:absolute;top:25px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid white"></div></div>`,
+                    anchor: new window.naver.maps.Point(13, 32),
                 },
                 zIndex: 900,
             });
@@ -185,12 +180,16 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             const border = isSelected ? 4 : 2;
             const half = size / 2;
 
-            const label = result
-                ? `<div style="position:absolute;top:${size + 4}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${result.duration_minutes}분</div>`
-                : "";
+            // 관심 대학은 점 대신 학사모 마커로 바꾼다. 배경색은 통학시간 색상을 그대로 써서
+            // 다른 대학과 같은 기준으로 읽히게 한다.
+            const dot = isFavorite
+                ? `<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:${color};border:3px solid white;border-radius:9999px;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:pointer">${GRADUATION_CAP}</div>`
+                : `<div style="background:${color};width:${size}px;height:${size}px;border-radius:9999px;border:${border}px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer"></div>`;
 
-            const heart = isFavorite
-                ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:${FAVORITE_COLOR};font-size:13px;line-height:1;text-shadow:0 0 3px white,0 0 3px white">♥</div>`
+            const iconSize = isFavorite ? 30 : size;
+            const labelTop = isFavorite ? 34 : size + 4;
+            const positionedLabel = result
+                ? `<div style="position:absolute;top:${labelTop}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${result.duration_minutes}분</div>`
                 : "";
 
             const marker = new window.naver.maps.Marker({
@@ -198,8 +197,8 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 map,
                 title: uni.name,
                 icon: {
-                    content: `<div style="position:relative"><div style="background:${color};width:${size}px;height:${size}px;border-radius:9999px;border:${border}px solid ${isFavorite ? FAVORITE_COLOR : "white"};box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer"></div>${heart}${label}</div>`,
-                    anchor: new window.naver.maps.Point(half, half),
+                    content: `<div style="position:relative">${dot}${positionedLabel}</div>`,
+                    anchor: new window.naver.maps.Point(iconSize / 2, iconSize / 2),
                 },
                 zIndex: isSelected ? 999 : isFavorite ? 500 : result ? 200 : 100,
             });
