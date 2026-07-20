@@ -1,15 +1,23 @@
 // frontend/src/components/AuthButton.tsx
 
 import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { UNIVERSITIES } from "../data/universities";
 import { useAuth } from "../hooks/useAuth";
 import { useFavorites } from "../hooks/useFavorites";
 
-const AuthButton: React.FC = () => {
+interface AuthButtonProps {
+    // 홈에서만 넘어온다 — 다른 페이지에는 저장할 "현재 검색한 주소"가 없다.
+    canSaveCurrent?: boolean;
+    onSaveCurrent?: () => void;
+}
+
+const AuthButton: React.FC<AuthButtonProps> = ({ canSaveCurrent, onSaveCurrent }) => {
     const { user, loading, login, logout } = useAuth();
     const { addresses, remove, favoriteIds, toggle } = useFavorites();
     const [open, setOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const location = useLocation();
 
     useEffect(() => {
         if (!open) return;
@@ -94,9 +102,20 @@ const AuthButton: React.FC = () => {
                     </div>
 
                     <section className="pt-3">
-                        <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400">
-                            저장한 주소 {addresses.length > 0 && `(${addresses.length})`}
-                        </h3>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <h3 className="text-xs font-semibold tracking-wide text-gray-400">
+                                저장한 주소 {addresses.length > 0 && `(${addresses.length})`}
+                            </h3>
+                            {canSaveCurrent && onSaveCurrent && (
+                                <button
+                                    type="button"
+                                    onClick={onSaveCurrent}
+                                    className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-brand transition-colors hover:bg-brand/5"
+                                >
+                                    ＋ 지금 주소 저장
+                                </button>
+                            )}
+                        </div>
                         {addresses.length === 0 ? (
                             <p className="text-xs text-gray-400">
                                 주소를 검색한 뒤 ☆ 버튼으로 저장할 수 있어요.
@@ -127,9 +146,21 @@ const AuthButton: React.FC = () => {
                             관심 대학 {favorites.length > 0 && `(${favorites.length})`}
                         </h3>
                         {favorites.length === 0 ? (
-                            <p className="text-xs text-gray-400">
-                                대학 목록에서 ♡를 눌러 담을 수 있어요.
-                            </p>
+                            <>
+                                <p className="text-xs text-gray-400">
+                                    대학 목록에서 ♡를 눌러 담을 수 있어요.
+                                </p>
+                                {location.pathname !== "/universities" && (
+                                    <Link
+                                        to="/universities"
+                                        state={{ backgroundLocation: location }}
+                                        onClick={() => setOpen(false)}
+                                        className="mt-2 inline-block rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                                    >
+                                        University List 열기
+                                    </Link>
+                                )}
+                            </>
                         ) : (
                             <ul className="max-h-36 space-y-1 overflow-y-auto">
                                 {favorites.map((u) => (

@@ -24,7 +24,7 @@ const Home = () => {
     const [resetKey, setResetKey] = useState<number>(0);
     const { search, reset, results, homeLocation, loading, error } = useSearch();
     const { user } = useAuth();
-    const { addresses, save, remove } = useFavorites();
+    const { addresses, save, remove, favoriteIds } = useFavorites();
     const [lastAddress, setLastAddress] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const mapRef = useRef<MapContainerHandle | null>(null);
@@ -94,6 +94,8 @@ const Home = () => {
                         visibleUniversityIds={null}
                         selectedUniversityId={null}
                         maxMinutes={maxMinutes}
+                        savedAddresses={addresses}
+                        favoriteUniversityIds={favoriteIds}
                     />
                 </div>
             </main>
@@ -112,7 +114,7 @@ const Home = () => {
             </div>
 
             <div className="fixed top-4 right-4 z-10 bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5">
-                <AuthButton />
+                <AuthButton canSaveCurrent={canSaveCurrent} onSaveCurrent={handleSaveCurrent} />
             </div>
 
             {loginFailed && (

@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { SavedAddress } from "../api";
 import { CommuteResult, University } from "../types/university";
 import { getCommuteColor } from "../utils/commute";
 import { loadNaverMaps } from "../utils/naverMaps";
@@ -17,6 +18,8 @@ interface MapContainerProps {
     selectedUniversityId: string | null;
     onSelectUniversity?: (id: string) => void;
     maxMinutes: number;
+    savedAddresses?: SavedAddress[];
+    favoriteUniversityIds?: Set<string>;
 }
 
 export interface MapContainerHandle {
@@ -24,6 +27,11 @@ export interface MapContainerHandle {
 }
 
 const NEUTRAL_COLOR = "#8B95A1";
+const SAVED_ADDRESS_COLOR = "#F59E0B";
+const FAVORITE_COLOR = "#EF4444";
+
+// 저장 주소가 지금 검색한 집 위치와 사실상 같은 지점이면 마커가 겹쳐 보이므로 하나만 그린다(약 30m).
+const SAME_POINT_EPSILON = 3e-4;
 
 const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     homeLocation,
@@ -33,6 +41,8 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     selectedUniversityId,
     onSelectUniversity,
     maxMinutes,
+    savedAddresses,
+    favoriteUniversityIds,
 }, ref) => {
     const mapElement = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<any>(null);
@@ -135,11 +145,36 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             markersRef.current.push(homeMarker);
         }
 
+        (savedAddresses ?? []).forEach((saved) => {
+            if (saved.lat === null || saved.lng === null) return;
+            if (
+                homeLocation &&
+                Math.abs(homeLocation.lat - saved.lat) < SAME_POINT_EPSILON &&
+                Math.abs(homeLocation.lng - saved.lng) < SAME_POINT_EPSILON
+            ) {
+                return;
+            }
+
+            const savedMarker = new window.naver.maps.Marker({
+                position: new window.naver.maps.LatLng(saved.lat, saved.lng),
+                map,
+                title: saved.address,
+                icon: {
+                    content: `<div style="display:flex;align-items:center;justify-content:center;background:${SAVED_ADDRESS_COLOR};width:22px;height:22px;border-radius:9999px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);color:white;font-size:11px;line-height:1">★</div>`,
+                    anchor: new window.naver.maps.Point(11, 11),
+                },
+                zIndex: 900,
+            });
+            markersRef.current.push(savedMarker);
+        });
+
         universities.forEach((uni) => {
             if (visibleUniversityIds && !visibleUniversityIds.has(uni.id)) return;
 
             const result = resultById.get(uni.id);
-            if (result && result.duration_minutes > maxMinutes) return;
+            const isFavorite = favoriteUniversityIds?.has(uni.id) ?? false;
+            // 관심 대학은 시간 필터에 걸려도 계속 보여준다 — 표시가 목적이라 사라지면 의미가 없다.
+            if (result && result.duration_minutes > maxMinutes && !isFavorite) return;
 
             const isSelected = uni.id === selectedUniversityId;
 
@@ -154,15 +189,19 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 ? `<div style="position:absolute;top:${size + 4}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${result.duration_minutes}분</div>`
                 : "";
 
+            const heart = isFavorite
+                ? `<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);color:${FAVORITE_COLOR};font-size:13px;line-height:1;text-shadow:0 0 3px white,0 0 3px white">♥</div>`
+                : "";
+
             const marker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(uni.lat, uni.lng),
                 map,
                 title: uni.name,
                 icon: {
-                    content: `<div style="position:relative"><div style="background:${color};width:${size}px;height:${size}px;border-radius:9999px;border:${border}px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer"></div>${label}</div>`,
+                    content: `<div style="position:relative"><div style="background:${color};width:${size}px;height:${size}px;border-radius:9999px;border:${border}px solid ${isFavorite ? FAVORITE_COLOR : "white"};box-shadow:0 2px 6px rgba(0,0,0,0.2);cursor:pointer"></div>${heart}${label}</div>`,
                     anchor: new window.naver.maps.Point(half, half),
                 },
-                zIndex: isSelected ? 999 : result ? 200 : 100,
+                zIndex: isSelected ? 999 : isFavorite ? 500 : result ? 200 : 100,
             });
 
             const showInfo = () => {
@@ -217,7 +256,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });
-    }, [mapReady, homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity, maxMinutes]);
+    }, [mapReady, homeLocation, universities, commuteResults, visibleUniversityIds, selectedUniversityId, onSelectUniversity, maxMinutes, savedAddresses, favoriteUniversityIds]);
 
     if (loadError) {
         return (
