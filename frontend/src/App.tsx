@@ -9,8 +9,11 @@ import AuthButton from "./components/AuthButton";
 import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
+import SavedAddresses from "./components/SavedAddresses";
 import { fetchUniversities } from "./api";
 import { useSearch } from "./hooks/useSearch";
+import { useAuth } from "./hooks/useAuth";
+import { useSavedAddresses } from "./hooks/useFavorites";
 import type { University } from "./types/university";
 import "./index.css";
 
@@ -20,6 +23,10 @@ const Home = () => {
     const [maxMinutes, setMaxMinutes] = useState<number>(60);
     const [resetKey, setResetKey] = useState<number>(0);
     const { search, reset, results, homeLocation, loading, error } = useSearch();
+    const { user } = useAuth();
+    const { addresses, save, remove } = useSavedAddresses(!!user);
+    const [lastAddress, setLastAddress] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
     const mapRef = useRef<MapContainerHandle | null>(null);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -42,10 +49,35 @@ const Home = () => {
 
     const handleReset = () => {
         reset();
+        setLastAddress(null);
         setMaxMinutes(60);
         setResetKey((k) => k + 1);
         mapRef.current?.resetView();
         navigate("/", { state: null, replace: true });
+    };
+
+    const handleSearch = (address: string) => {
+        setLastAddress(address);
+        search(address);
+    };
+
+    const showActionError = (message: string) => {
+        setActionError(message);
+        setTimeout(() => setActionError(null), 4000);
+    };
+
+    const canSaveCurrent =
+        !!user &&
+        !!lastAddress &&
+        !!homeLocation &&
+        !loading &&
+        !addresses.some((a) => a.address === lastAddress);
+
+    const handleSaveCurrent = () => {
+        if (!lastAddress || !homeLocation) return;
+        save(lastAddress, homeLocation.lat, homeLocation.lng).catch((err) =>
+            showActionError(err instanceof Error ? err.message : "주소 저장에 실패했어요.")
+        );
     };
 
     return (
@@ -69,7 +101,14 @@ const Home = () => {
             <RightSidebar visible={isResultVisible} />
 
             <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-6 py-1">
-                <MinimalSearchBar key={resetKey} onSearch={search} loading={loading} />
+                <MinimalSearchBar key={resetKey} onSearch={handleSearch} loading={loading} />
+                <SavedAddresses
+                    addresses={addresses}
+                    canSaveCurrent={canSaveCurrent}
+                    onSaveCurrent={handleSaveCurrent}
+                    onSelect={handleSearch}
+                    onDelete={remove}
+                />
             </div>
 
             <div className="fixed top-4 right-4 z-10 bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5">
@@ -82,9 +121,9 @@ const Home = () => {
                 </div>
             )}
 
-            {error && (
+            {(error || actionError) && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-20 rounded-xl bg-red-500/90 px-4 py-2 text-sm text-white shadow-lg">
-                    {error}
+                    {error ?? actionError}
                 </div>
             )}
         </div>

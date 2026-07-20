@@ -64,6 +64,64 @@ export async function logoutRequest(): Promise<void> {
   });
 }
 
+export interface SavedAddress {
+  id: number;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+}
+
+async function jsonOrThrow(res: Response) {
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((body) => (typeof body?.detail === "string" ? body.detail : null))
+      .catch(() => null);
+    throw new Error(detail ?? "요청에 실패했어요. 잠시 후 다시 시도해 주세요.");
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+export async function fetchSavedAddresses(): Promise<SavedAddress[]> {
+  const res = await fetch(`${BASE_URL}/api/me/addresses`, { credentials: "include" });
+  return jsonOrThrow(res);
+}
+
+export async function saveAddress(
+  address: string,
+  lat: number | null,
+  lng: number | null
+): Promise<SavedAddress> {
+  const res = await fetch(`${BASE_URL}/api/me/addresses`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ address, lat, lng })
+  });
+  return jsonOrThrow(res);
+}
+
+export async function deleteSavedAddress(id: number): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/me/addresses/${id}`, {
+    method: "DELETE",
+    credentials: "include"
+  });
+  await jsonOrThrow(res);
+}
+
+export async function fetchFavoriteUniversityIds(): Promise<string[]> {
+  const res = await fetch(`${BASE_URL}/api/me/universities`, { credentials: "include" });
+  return jsonOrThrow(res);
+}
+
+export async function setFavoriteUniversity(id: string, favorite: boolean): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/me/universities/${encodeURIComponent(id)}`, {
+    method: favorite ? "PUT" : "DELETE",
+    credentials: "include"
+  });
+  await jsonOrThrow(res);
+}
+
 export async function searchUniversities(payload: {
   address: string;
   mode: TransportMode;

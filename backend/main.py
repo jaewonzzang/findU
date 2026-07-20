@@ -3,7 +3,7 @@
 import os
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -12,7 +12,9 @@ from universities import UNIVERSITIES
 from commute_service import get_commute_results
 from kakao_client import search_keyword, KakaoKeyMissingError
 from naver_client import AddressNotFoundError
+from rate_limit import commute_rate_limit
 from auth import router as auth_router
+from favorites import router as favorites_router
 
 app = FastAPI(title="findU Prototype API")
 
@@ -39,6 +41,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(favorites_router)
 
 
 @app.get("/api/universities", response_model=list[University])
@@ -50,7 +53,11 @@ def get_universities():
     return UNIVERSITIES
 
 
-@app.post("/api/commute", response_model=CommuteResponse)
+@app.post(
+    "/api/commute",
+    response_model=CommuteResponse,
+    dependencies=[Depends(commute_rate_limit)],
+)
 async def calculate_commute(request: CommuteRequest):
     """
     집 주소 + 교통수단 + 최대 통학시간을 받아
