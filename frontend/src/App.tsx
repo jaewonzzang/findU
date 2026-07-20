@@ -74,6 +74,10 @@ const Home = () => {
         !loading &&
         !addresses.some((a) => a.address === lastAddress);
 
+    // 지도는 maxMinutes 로 마커를 거르므로, 검색은 됐는데 전부 걸러진 경우를 따로 안내한다.
+    const visibleCount = (results ?? []).filter((r) => r.duration_minutes <= maxMinutes).length;
+    const showNoResults = !loading && !error && !!homeLocation && visibleCount === 0;
+
     const handleSaveCurrent = () => {
         if (!lastAddress || !homeLocation) return;
         save(lastAddress, homeLocation.lat, homeLocation.lng).catch((err) =>
@@ -103,7 +107,7 @@ const Home = () => {
 
             <RightSidebar visible={isResultVisible} />
 
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-6 py-1">
+            <div className="fixed top-20 md:top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-4 md:px-6 py-1">
                 <MinimalSearchBar key={resetKey} onSearch={handleSearch} loading={loading} />
                 <SavedAddresses
                     addresses={addresses}
@@ -112,6 +116,11 @@ const Home = () => {
                     onSelect={handleSearch}
                     onDelete={remove}
                 />
+                {showNoResults && (
+                    <p className="pb-3 text-xs text-gray-500">
+                        {maxMinutes}분 이내에 닿는 대학이 없어요. 왼쪽에서 최대 시간을 늘려보세요.
+                    </p>
+                )}
             </div>
 
             <div className="fixed top-4 right-4 z-10 bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5">

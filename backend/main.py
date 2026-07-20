@@ -1,5 +1,6 @@
 # backend/main.py
 
+import logging
 import os
 
 import httpx
@@ -12,9 +13,11 @@ from universities import UNIVERSITIES
 from commute_service import get_commute_results
 from kakao_client import search_keyword, KakaoKeyMissingError
 from naver_client import AddressNotFoundError
-from rate_limit import commute_rate_limit
+from rate_limit import autocomplete_rate_limit, commute_rate_limit
 from auth import router as auth_router
 from favorites import router as favorites_router
+
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="findU Prototype API")
 
@@ -37,7 +40,9 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET", "dev-insecure-change-me"),
     same_site=os.getenv("SESSION_SAMESITE", "lax"),
-    https_only=os.getenv("SESSION_SAMESITE", "lax") == "none",
+    # 기본값을 켜 둬서 배포 환경이 별도 설정 없이도 https 전용 쿠키를 쓴다.
+    # http 로 도는 로컬 개발에서만 SESSION_HTTPS_ONLY=false 로 내린다.
+    https_only=os.getenv("SESSION_HTTPS_ONLY", "true").lower() != "false",
     # 쿠키 수명과 서명 만료를 함께 제한한다. 기본 5분이라 방치된 세션은 알아서 끊긴다.
     max_age=int(os.getenv("SESSION_MAX_AGE", "300")),
 )
@@ -79,7 +84,7 @@ async def calculate_commute(request: CommuteRequest):
     return CommuteResponse(results=results, home_location=home_location)
 
 
-@app.get("/api/autocomplete")
+@app.get("/api/autocomplete", dependencies=[Depends(autocomplete_rate_limit)])
 async def autocomplete(query: str = ""):
     """
     Kakao 로컬 키워드 검색 프록시.
@@ -96,8 +101,19 @@ async def autocomplete(query: str = ""):
     except (httpx.HTTPStatusError, httpx.RequestError) as e:
         # Kakao 비정상 응답/네트워크 오류는 빈 결과로 처리해
         # 프론트 자동완성이 조용히 비도록 함(검색 흐름 차단 방지).
-        print(f"Kakao autocomplete error: {e}")
+        logger.error(f"Kakao autocomplete error: {e}")
         return []
+
+
+@app.get("/api/health")
+def health():
+    """플랫폼 헬스체크용. 외부 API를 호출하지 않아 쿼터를 쓰지 않는다."""
+    return {
+        "status": "ok",
+        "naver_keys": bool(os.getenv("NAVER_CLIENT_ID") and os.getenv("NAVER_CLIENT_SECRET")),
+        "kakao_key": bool(os.getenv("KAKAO_REST_API_KEY")),
+        "favorites_store": bool(os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
+    }
 
 
 @app.get("/")

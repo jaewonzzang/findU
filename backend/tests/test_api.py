@@ -101,3 +101,12 @@ def test_universities_endpoint_returns_static_list():
     body = res.json()
     assert len(body) > 0
     assert {"id", "name", "address", "lat", "lng"} <= set(body[0].keys())
+
+
+def test_health_reports_which_integrations_are_configured():
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    # 값은 환경에 따라 다르지만 키는 항상 있어야 배포 후 원인 파악에 쓸 수 있다
+    assert {"naver_keys", "kakao_key", "favorites_store"} <= set(body)
