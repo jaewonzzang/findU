@@ -111,6 +111,10 @@ $ npm run dev     # http://localhost:5173
 
 ![주요 화면](docs/demo.gif)
 
+| ① 첫 화면 · 쿠키 동의 | ② 주소 검색 → 통학 시간 | ③ 로그인 · 저장 주소/관심 대학 |
+| :---: | :---: | :---: |
+| <img width="280" src="docs/screenshot/first.png"/> | <img width="280" src="docs/screenshot/third.png"/> | <img width="280" src="docs/screenshot/second.png"/> |
+
 ---
 
 ## 주요 기능 📦
