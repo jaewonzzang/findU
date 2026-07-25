@@ -28,6 +28,8 @@ export interface MapContainerHandle {
 
 const NEUTRAL_COLOR = "#8B95A1";
 const SAVED_ADDRESS_COLOR = "#F59E0B";
+// 저장 주소를 그대로 검색하면 좌표가 사실상 같다 — 파란 집 마커를 겹쳐 그리지 않고 노란 별 하나로만 표시한다.
+const SAME_POINT_EPSILON = 0.0002; // 약 22m
 
 // 학사모 — 관심 대학 마커 안에 넣는다.
 const GRADUATION_CAP =
@@ -131,7 +133,18 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             (commuteResults ?? []).map((r) => [r.university_id, r])
         );
 
-        if (homeLocation) {
+        // 현재 위치가 저장 주소와 겹치면 파란 마커는 생략하고 노란 별 하나로만 표시한다.
+        const homeIsSaved =
+            !!homeLocation &&
+            (savedAddresses ?? []).some(
+                (s) =>
+                    s.lat !== null &&
+                    s.lng !== null &&
+                    Math.abs(s.lat - homeLocation.lat) < SAME_POINT_EPSILON &&
+                    Math.abs(s.lng - homeLocation.lng) < SAME_POINT_EPSILON
+            );
+
+        if (homeLocation && !homeIsSaved) {
             const homeMarker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(homeLocation.lat, homeLocation.lng),
                 map,
@@ -145,8 +158,8 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             markersRef.current.push(homeMarker);
         }
 
-        // 핀 끝을 좌표에 맞춰 본체가 위로 서게 한다. 저장 주소를 그대로 검색해도
-        // 좌표가 같은 파란 집 마커를 가리지 않고 위아래로 나란히 보인다.
+        // 핀 끝을 좌표에 맞춘다. 저장 주소가 현재 위치와 겹칠 땐 파란 마커를 안 그리므로
+        // 이 노란 별 하나가 그 지점을 대표한다.
         (savedAddresses ?? []).forEach((saved) => {
             if (saved.lat === null || saved.lng === null) return;
 
