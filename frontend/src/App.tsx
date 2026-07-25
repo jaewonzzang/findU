@@ -13,7 +13,7 @@ import SavedAddresses from "./components/SavedAddresses";
 import CookieConsent from "./components/CookieConsent";
 import { fetchUniversities } from "./api";
 import { useSearch } from "./hooks/useSearch";
-import { useAuth } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { FavoritesProvider, useFavorites } from "./hooks/useFavorites";
 import type { University } from "./types/university";
 import "./index.css";
@@ -61,6 +61,14 @@ const Home = () => {
         setLastAddress(address);
         search(address);
     };
+
+    // 로그아웃(또는 세션 만료)으로 user가 사라지면 검색·마커까지 초기화해 로그인 흔적을 남기지 않는다.
+    const prevUserRef = useRef(user);
+    useEffect(() => {
+        if (prevUserRef.current && !user) handleReset();
+        prevUserRef.current = user;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     const showActionError = (message: string) => {
         setActionError(message);
@@ -179,7 +187,9 @@ const AppContent = () => {
 function App() {
     return (
         <Router>
-            <AppContent />
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
         </Router>
     );
 }
