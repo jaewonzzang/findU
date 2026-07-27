@@ -25,8 +25,7 @@
 
 동작 방식: 입력 주소를 Naver Geocoding으로 좌표로 바꾸고, 각 대학까지 소요 시간을 Naver Directions 5로 병렬 계산한 뒤, 사용자가 설정한 최대 통학 시간으로 필터링해 가까운 순으로 정렬한다.
 
-- **검색** — 주소 입력 → 38개 대학까지 통학 시간 정렬 + 지도 마커
-- **자동완성** — Kakao 로컬 키워드 검색으로 도로명 주소 유도
+- **검색** — 도로명 주소 입력 → 38개 대학까지 통학 시간 정렬 + 지도 마커
 - **로그인(선택)** — Kakao OAuth, 집 주소 저장 · 관심 대학 찜
 - **폴백 투명성** — 실측 실패 시 추정치로 계산하되 `is_fallback` 플래그로 실측/추정을 구분
 
@@ -99,7 +98,6 @@ $ npm run dev     # http://localhost:5173
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=TypeScript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=Vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=for-the-badge&logo=Tailwind%20CSS&logoColor=white)
-![Framer Motion](https://img.shields.io/badge/Framer%20Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)
 
 ### Deploy
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=Vercel&logoColor=white)
@@ -120,12 +118,9 @@ $ npm run dev     # http://localhost:5173
 ## 주요 기능 📦
 
 ### ⭐️ 통학 시간 검색
-- 주소 1건 입력 → 수도권 대학 38곳까지 통학 시간을 **병렬 계산**(`asyncio.gather`)해 가까운 순 정렬
-- 왼쪽 **최대 통학 시간** 슬라이더로 지도 마커·리스트를 실시간 필터
-- 결과는 지도 마커 + Framer Motion 애니메이션 리스트로 동시 렌더링
-
-### ⭐️ 주소 자동완성
-- Naver Geocoding이 POI("강남역")를 못 잡아, Kakao 로컬 키워드 검색을 프록시해 **도로명 주소를 고르도록** 유도
+- 도로명 주소 1건 입력 → 수도권 대학 38곳까지 통학 시간을 **병렬 계산**(`asyncio.gather`)해 가까운 순 정렬
+- 왼쪽 **최대 통학 시간** 슬라이더로 지도 마커를 실시간 필터
+- 결과는 지도 위에 통학시간 색상 마커 + "○○분" 라벨로 렌더링
 
 ### ⭐️ 로그인 · 즐겨찾기 (Kakao OAuth)
 - 세션 쿠키 기반 로그인, `state` 파라미터로 CSRF 방어
@@ -145,7 +140,7 @@ $ npm run dev     # http://localhost:5173
 ## 아키텍처
 
 ```
-주소 입력 (자동완성: Kakao 키워드 검색 프록시)
+도로명 주소 입력
    │
    ▼
 POST /api/commute
@@ -155,7 +150,7 @@ POST /api/commute
    ├─ 캐시 미스분만 Naver Directions 5 병렬 호출 (asyncio.gather)
    │    └─ 대중교통 모드: 차량 시간 × 1.3 + 15분으로 추산
    ▼
-최대 통학시간 필터 → 시간순 정렬 → 프론트에서 지도 마커 + 애니메이션 리스트 렌더링
+최대 통학시간 필터 → 시간순 정렬 → 프론트에서 지도 마커로 렌더링
 ```
 
 ### 디렉토리 구조
@@ -213,7 +208,7 @@ NCP에 공개 대중교통 길찾기 API가 없다. 대중교통 모드를 빼�
 | 한계 | 지금 상태 | 다음 단계 |
 |---|---|---|
 | 대중교통 시간이 추산값 | NCP에 공개 대중교통 길찾기 API가 없어 `차량 × 1.3 + 15분`으로 계산하고 UI에 "차량 기준 추산" 명시 | ODsay 등 외부 대중교통 API 연동, 또는 지하철 노선 데이터로 직접 계산 |
-| 주소만 지오코딩 가능 | NCP Geocoding이 POI 미지원 → Kakao 키워드 검색 자동완성으로 우회 | 자동완성 결과 좌표를 그대로 넘겨 지오코딩 단계 생략 |
+| 자동완성 미연동 · 도로명 주소만 | NCP Geocoding이 POI("강남역")를 못 잡아 도로명 주소를 직접 입력해야 함. Kakao 키워드 검색 프록시(`/api/autocomplete`)는 백엔드에 있으나 프론트에 아직 연결 안 함 | 검색창에 자동완성 UI를 붙이고, 선택한 결과 좌표를 그대로 넘겨 지오코딩 단계 생략 |
 | 캐시가 인메모리·단일 프로세스 | 주간 단위로 버리는 데이터라 영속화 이득이 적다고 판단 | 인스턴스를 늘리면 Redis로 이전 |
 | 레이트 리밋도 단일 프로세스 | 같은 이유로 프로세스 메모리에 카운터 | Redis 기반 공유 카운터 |
 | 대학 목록이 정적 JSON | 수도권 38곳으로 한정해 좌표를 검증된 값으로 고정 | 전국 확대 시 대학알리미 공공데이터로 교체 |
