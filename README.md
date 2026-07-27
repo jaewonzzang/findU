@@ -166,7 +166,7 @@ POST /api/commute
 │   ├── commute_service.py : 지오코딩 + 경로 계산 오케스트레이션
 │   ├── commute_cache.py : 주간 인메모리 캐시 (110m 격자 공유)
 │   ├── naver_client.py : Naver Geocoding + Directions 5
-│   ├── kakao_client.py : Kakao 로컬 키워드 검색 (자동완성 프록시)
+│   ├── kakao_client.py : Kakao 로컬 키워드 검색 (자동완성용, 프론트 미연동)
 │   ├── auth.py : Kakao OAuth (세션 쿠키)
 │   ├── favorites.py : 저장 주소·관심 대학 (Supabase PostgREST)
 │   ├── rate_limit.py : IP당 엔드포인트별 레이트 리밋
@@ -181,7 +181,7 @@ POST /api/commute
 │       ├── components/ : MinimalSearchBar, MapContainer, AuthButton,
 │       │                 SavedAddresses, CookieConsent ...
 │       ├── pages/ : UniversityList · About
-│       ├── data/ : 대학 목록 · 자동완성 정적 데이터
+│       ├── data/ : 대학 목록 정적 데이터
 │       └── types/ : 공유 TypeScript 인터페이스
 │
 └── docs/ : API 명세 · Kakao OAuth 설정 · 데모
