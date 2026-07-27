@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useSearchParams, type Location } from "react-router-dom";
 import Header from "./components/Header";
 import LeftSidebar from "./components/LeftSidebar";
-import RightSidebar from "./components/RightSidebar";
 import MinimalSearchBar from "./components/MinimalSearchBar";
 import MapContainer, { type MapContainerHandle } from "./components/MapContainer";
 import AuthButton from "./components/AuthButton";
@@ -19,7 +18,6 @@ import type { University } from "./types/university";
 import "./index.css";
 
 const Home = () => {
-    const [isResultVisible] = useState<boolean>(false);
     const [universities, setUniversities] = useState<University[]>([]);
     const [maxMinutes, setMaxMinutes] = useState<number>(60);
     const [resetKey, setResetKey] = useState<number>(0);
@@ -112,8 +110,6 @@ const Home = () => {
                     />
                 </div>
             </main>
-
-            <RightSidebar visible={isResultVisible} />
 
             <div className="fixed top-20 md:top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[480px] z-10 bg-white/60 backdrop-blur-xl hover:bg-white focus-within:bg-white transition-colors duration-200 rounded-2xl shadow-lg px-4 md:px-6 py-1">
                 <MinimalSearchBar key={resetKey} onSearch={handleSearch} loading={loading} />

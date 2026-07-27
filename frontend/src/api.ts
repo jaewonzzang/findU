@@ -41,6 +41,25 @@ export async function fetchCommute(
   return res.json();
 }
 
+export interface AddressSuggestion {
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  category: string;
+}
+
+// Kakao 키워드 검색 프록시. 실패하면 빈 배열로 조용히 — 자동완성이 검색 흐름을 막지 않게.
+export async function fetchAutocomplete(query: string): Promise<AddressSuggestion[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/autocomplete?query=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 export interface AuthUser {
   id: number;
   nickname: string;
