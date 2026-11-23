@@ -7,8 +7,13 @@ import { loadNaverMaps } from "../utils/naverMaps";
 declare global {
     interface Window {
         naver: any;
+        navermap_authFailure?: () => void;
     }
 }
+
+// 네이버 지도는 인증에 실패하면 window.naver.maps 를 null 로 바꾼다.
+// 그 상태에서 지도 API를 부르면 앱 전체가 하얗게 죽으므로, 쓰기 전에 항상 확인한다.
+const mapsAvailable = () => !!window.naver?.maps;
 
 interface MapContainerProps {
     homeLocation: { lat: number; lng: number } | null;
@@ -17,6 +22,7 @@ interface MapContainerProps {
     visibleUniversityIds: Set<string> | null;
     selectedUniversityId: string | null;
     onSelectUniversity?: (id: string) => void;
+    onMapClick?: () => void;
     maxMinutes: number;
     savedAddresses?: SavedAddress[];
     favoriteUniversityIds?: Set<string>;
@@ -42,6 +48,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     visibleUniversityIds,
     selectedUniversityId,
     onSelectUniversity,
+    onMapClick,
     maxMinutes,
     savedAddresses,
     favoriteUniversityIds,
@@ -54,11 +61,14 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     const pinnedIdRef = useRef<string | null>(null);
     const listenersRef = useRef<any[]>([]);
     const [mapReady, setMapReady] = useState(false);
+    // 지도 init effect는 한 번만 돌기 때문에 최신 콜백을 ref로 넘겨준다.
+    const onMapClickRef = useRef(onMapClick);
+    onMapClickRef.current = onMapClick;
     const [loadError, setLoadError] = useState<string | null>(null);
 
     useImperativeHandle(ref, () => ({
         resetView: () => {
-            if (mapRef.current) {
+            if (mapRef.current && mapsAvailable()) {
                 mapRef.current.setCenter(new window.naver.maps.LatLng(37.5665, 126.9780));
                 mapRef.current.setZoom(11);
             }
@@ -73,15 +83,20 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     useEffect(() => {
         let cancelled = false;
         let mapClickHandle: any = null;
+        // 인증 실패 시 지도 영역만 안내 문구로 바꾸고, 결과 리스트 등 나머지 UI는 그대로 쓰게 둔다.
+        window.navermap_authFailure = () => {
+            if (!cancelled) setLoadError("네이버 지도 인증 실패");
+        };
         loadNaverMaps()
             .then(() => {
-                if (cancelled || !mapElement.current) return;
+                if (cancelled || !mapElement.current || !mapsAvailable()) return;
                 const map = new window.naver.maps.Map(mapElement.current, {
                     center: new window.naver.maps.LatLng(37.5665, 126.9780),
                     zoom: 11,
                     zoomControl: true,
+                    // 오른쪽 위는 결과 패널이 차지하므로 줌 버튼은 왼쪽 아래로 옮긴다.
                     zoomControlOptions: {
-                        position: window.naver.maps.Position.TOP_RIGHT,
+                        position: window.naver.maps.Position.LEFT_BOTTOM,
                     },
                 });
                 mapRef.current = map;
@@ -98,6 +113,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                         openInfoIdRef.current = null;
                         pinnedIdRef.current = null;
                     }
+                    onMapClickRef.current?.();
                 });
                 setMapReady(true);
             })
@@ -106,17 +122,17 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             });
         return () => {
             cancelled = true;
-            if (mapClickHandle) {
+            if (mapClickHandle && mapsAvailable()) {
                 window.naver.maps.Event.removeListener(mapClickHandle);
             }
-            if (infoWindowRef.current) {
+            if (infoWindowRef.current && mapsAvailable()) {
                 infoWindowRef.current.close();
             }
         };
     }, []);
 
     useEffect(() => {
-        if (!mapReady || !mapRef.current) return;
+        if (!mapReady || !mapRef.current || !mapsAvailable()) return;
 
         listenersRef.current.forEach((h) => window.naver.maps.Event.removeListener(h));
         listenersRef.current = [];
@@ -216,9 +232,10 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 zIndex: isSelected ? 999 : isFavorite ? 500 : result ? 200 : 100,
             });
 
+            const infoLabel = result ? `${uni.name} · ${result.duration_minutes}분` : uni.name;
             const showInfo = () => {
                 infoWindowRef.current.setContent(
-                    `<div style="position:relative;background:white;color:#1f2937;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap">${uni.name}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:white;box-shadow:2px 2px 4px rgba(0,0,0,0.06)"></div></div>`
+                    `<div style="position:relative;background:white;color:#1f2937;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap">${infoLabel}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:white;box-shadow:2px 2px 4px rgba(0,0,0,0.06)"></div></div>`
                 );
                 infoWindowRef.current.open(mapRef.current, marker);
             };
@@ -265,6 +282,10 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             markersRef.current.push(marker);
 
             if (isSelected) {
+                // 리스트에서 골랐을 때도 지도에서 어느 학교인지 바로 보이게 이름표를 고정해 띄운다.
+                showInfo();
+                pinnedIdRef.current = uni.id;
+                openInfoIdRef.current = uni.id;
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });

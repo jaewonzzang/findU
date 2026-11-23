@@ -10,7 +10,7 @@ const UniversityList: React.FC = () => {
     return (
         <div className="max-w-3xl mx-auto px-6 py-20">
             <h1 className="text-3xl font-bold text-gray-900 mb-12 tracking-tight">
-                University List
+                대학 목록
             </h1>
 
             <div className="space-y-8">

@@ -86,7 +86,7 @@ const MinimalSearchBar: React.FC<MinimalSearchBarProps> = ({ onSearch, loading }
                 onKeyDown={handleKeyDown}
                 onFocus={() => suggestions.length > 0 && setOpen(true)}
                 onBlur={() => setTimeout(() => setOpen(false), 120)}
-                placeholder="Enter your address..."
+                placeholder="집 주소나 가까운 역을 검색해 보세요"
                 role="combobox"
                 aria-expanded={open}
                 aria-autocomplete="list"

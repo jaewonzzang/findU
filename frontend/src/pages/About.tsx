@@ -4,7 +4,7 @@ const About: React.FC = () => {
     return (
         <div className="max-w-2xl mx-auto px-6 py-24 flex flex-col justify-center min-h-[60vh]">
             <h1 className="text-4xl font-bold text-gray-900 mb-12 tracking-tighter animate-fade-in">
-                About findU
+                findU 소개
             </h1>
 
             <div className="space-y-8 text-lg leading-relaxed text-gray-600 animate-fade-in-up delay-100">

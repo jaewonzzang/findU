@@ -1,10 +1,4 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-
-const navItems = [
-    { to: "/", label: "Home" },
-    { to: "/universities", label: "University List" },
-];
 
 const FLOATING_BOX =
     "bg-white/20 backdrop-blur-xl hover:bg-white/90 focus-within:bg-white/90 transition-colors duration-200 rounded-2xl shadow-lg p-4";
@@ -16,8 +10,6 @@ interface LeftSidebarProps {
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChange, onLogoClick }) => {
-    const location = useLocation();
-
     return (
         <>
             {/* Box A — Logo */}
@@ -31,34 +23,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChang
                 </button>
             </div>
 
-            {/* Box B — Nav */}
+            {/* Box B — Slider (주소 결과가 순위 패널로 나오므로 별도 메뉴는 두지 않는다) */}
             <div className={`hidden md:flex fixed top-24 left-4 z-20 w-[260px] flex-col ${FLOATING_BOX}`}>
-                <nav className="flex flex-col gap-0.5">
-                    {navItems.map(({ to, label }) => {
-                        const active = location.pathname === to;
-                        return (
-                            <Link
-                                key={to}
-                                to={to}
-                                state={to === "/universities" ? { backgroundLocation: location } : undefined}
-                                className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                                    active
-                                        ? "bg-brand/10 text-brand font-medium"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                }`}
-                            >
-                                {label}
-                            </Link>
-                        );
-                    })}
-                </nav>
-            </div>
-
-            {/* Box C — Slider */}
-            <div className={`hidden md:flex fixed top-56 left-4 z-20 w-[260px] flex-col ${FLOATING_BOX}`}>
                 <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        최대 시간
+                    <label className="text-xs font-semibold text-gray-700">
+                        최대 통학 시간
                     </label>
                     <span className="text-sm font-medium text-brand tabular-nums">
                         {maxMinutes}분 이내
