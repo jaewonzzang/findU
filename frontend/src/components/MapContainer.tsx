@@ -7,8 +7,13 @@ import { loadNaverMaps } from "../utils/naverMaps";
 declare global {
     interface Window {
         naver: any;
+        navermap_authFailure?: () => void;
     }
 }
+
+// 네이버 지도는 인증에 실패하면 window.naver.maps 를 null 로 바꾼다.
+// 그 상태에서 지도 API를 부르면 앱 전체가 하얗게 죽으므로, 쓰기 전에 항상 확인한다.
+const mapsAvailable = () => !!window.naver?.maps;
 
 interface MapContainerProps {
     homeLocation: { lat: number; lng: number } | null;
@@ -63,7 +68,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
 
     useImperativeHandle(ref, () => ({
         resetView: () => {
-            if (mapRef.current) {
+            if (mapRef.current && mapsAvailable()) {
                 mapRef.current.setCenter(new window.naver.maps.LatLng(37.5665, 126.9780));
                 mapRef.current.setZoom(11);
             }
@@ -78,9 +83,13 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     useEffect(() => {
         let cancelled = false;
         let mapClickHandle: any = null;
+        // 인증 실패 시 지도 영역만 안내 문구로 바꾸고, 결과 리스트 등 나머지 UI는 그대로 쓰게 둔다.
+        window.navermap_authFailure = () => {
+            if (!cancelled) setLoadError("네이버 지도 인증 실패");
+        };
         loadNaverMaps()
             .then(() => {
-                if (cancelled || !mapElement.current) return;
+                if (cancelled || !mapElement.current || !mapsAvailable()) return;
                 const map = new window.naver.maps.Map(mapElement.current, {
                     center: new window.naver.maps.LatLng(37.5665, 126.9780),
                     zoom: 11,
@@ -113,17 +122,17 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             });
         return () => {
             cancelled = true;
-            if (mapClickHandle) {
+            if (mapClickHandle && mapsAvailable()) {
                 window.naver.maps.Event.removeListener(mapClickHandle);
             }
-            if (infoWindowRef.current) {
+            if (infoWindowRef.current && mapsAvailable()) {
                 infoWindowRef.current.close();
             }
         };
     }, []);
 
     useEffect(() => {
-        if (!mapReady || !mapRef.current) return;
+        if (!mapReady || !mapRef.current || !mapsAvailable()) return;
 
         listenersRef.current.forEach((h) => window.naver.maps.Event.removeListener(h));
         listenersRef.current = [];
