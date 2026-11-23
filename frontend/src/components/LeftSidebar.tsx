@@ -47,6 +47,22 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ maxMinutes, onMaxMinutesChang
                     <span>60</span>
                     <span>120</span>
                 </div>
+
+                {/* 범례 — 지도 핀 색은 최대 시간 대비 비율로 정해진다(utils/commute.ts getCommuteColor) */}
+                <div className="mt-4 border-t border-gray-100 pt-3">
+                    <div
+                        className="h-1.5 rounded-full"
+                        style={{
+                            background:
+                                "linear-gradient(to right, hsl(120,70%,45%) 0%, hsl(120,70%,45%) 50%, hsl(60,70%,45%) 70%, hsl(0,75%,40%) 90%, hsl(0,75%,40%) 100%)",
+                        }}
+                        aria-hidden
+                    />
+                    <div className="mt-1.5 flex justify-between text-[11px] text-gray-500 tabular-nums">
+                        <span>{Math.round(maxMinutes * 0.5)}분 이내</span>
+                        <span>{Math.round(maxMinutes * 0.9)}분 이상</span>
+                    </div>
+                </div>
             </div>
         </>
     );

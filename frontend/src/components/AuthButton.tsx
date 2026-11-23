@@ -10,9 +10,11 @@ interface AuthButtonProps {
     // 홈에서만 넘어온다 — 다른 페이지에는 저장할 "현재 검색한 주소"가 없다.
     canSaveCurrent?: boolean;
     onSaveCurrent?: () => void;
+    // 홈 첫 화면에선 로그인이 필요 없으니 눈에 덜 띄는 텍스트 버튼으로 보여준다.
+    subtle?: boolean;
 }
 
-const AuthButton: React.FC<AuthButtonProps> = ({ canSaveCurrent, onSaveCurrent }) => {
+const AuthButton: React.FC<AuthButtonProps> = ({ canSaveCurrent, onSaveCurrent, subtle }) => {
     const { user, loading, login, logout } = useAuth();
     const { addresses, remove, favoriteIds, toggle } = useFavorites();
     const [open, setOpen] = useState(false);
@@ -36,6 +38,18 @@ const AuthButton: React.FC<AuthButtonProps> = ({ canSaveCurrent, onSaveCurrent }
     }, [open]);
 
     if (loading) return null;
+
+    if (!user && subtle) {
+        return (
+            <button
+                type="button"
+                onClick={login}
+                className="px-1 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            >
+                로그인
+            </button>
+        );
+    }
 
     if (!user) {
         return (
@@ -157,7 +171,7 @@ const AuthButton: React.FC<AuthButtonProps> = ({ canSaveCurrent, onSaveCurrent }
                                         onClick={() => setOpen(false)}
                                         className="mt-2 inline-block rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                                     >
-                                        University List 열기
+                                        대학 목록 열기
                                     </Link>
                                 )}
                             </>
