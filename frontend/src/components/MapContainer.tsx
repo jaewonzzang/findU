@@ -3,6 +3,7 @@ import { SavedAddress } from "../api";
 import { CommuteResult, University } from "../types/university";
 import { getCommuteColor } from "../utils/commute";
 import { loadNaverMaps } from "../utils/naverMaps";
+import { shortUniversityName } from "../utils/universityName";
 
 declare global {
     interface Window {
@@ -36,6 +37,10 @@ const NEUTRAL_COLOR = "#8B95A1";
 const SAVED_ADDRESS_COLOR = "#F59E0B";
 // 저장 주소를 그대로 검색하면 좌표가 사실상 같다 — 파란 집 마커를 겹쳐 그리지 않고 노란 별 하나로만 표시한다.
 const SAME_POINT_EPSILON = 0.0002; // 약 22m
+
+// 이 줌 이상이면 모든 핀에 이름표를 보여준다. 그보다 멀면 겹쳐서 읽을 수 없으니 가까운 몇 곳만.
+const LABEL_ALL_ZOOM = 13;
+const ALWAYS_LABELED_TOP_N = 3;
 
 // 학사모 — 관심 대학 마커 안에 넣는다.
 const GRADUATION_CAP =
@@ -107,6 +112,12 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                     disableAnchor: true,
                     pixelOffset: new window.naver.maps.Point(0, -10),
                 });
+                // 줌 단계에 따라 컨테이너에 클래스를 걸고, 라벨 표시 여부는 CSS(index.css)가 정한다.
+                // 줌할 때마다 마커를 다시 그리지 않아도 된다.
+                const syncZoomClass = () =>
+                    mapElement.current?.classList.toggle("findu-zoomed", map.getZoom() >= LABEL_ALL_ZOOM);
+                window.naver.maps.Event.addListener(map, "zoom_changed", syncZoomClass);
+                syncZoomClass();
                 mapClickHandle = window.naver.maps.Event.addListener(map, "click", () => {
                     if (infoWindowRef.current && (openInfoIdRef.current || pinnedIdRef.current)) {
                         infoWindowRef.current.close();
@@ -147,6 +158,13 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
         const map = mapRef.current;
         const resultById = new Map(
             (commuteResults ?? []).map((r) => [r.university_id, r])
+        );
+        // 순위 패널과 같은 기준(최대 시간 이내, 가까운 순)으로 등수를 매긴다.
+        const rankById = new Map(
+            (commuteResults ?? [])
+                .filter((r) => r.duration_minutes <= maxMinutes)
+                .sort((a, b) => a.duration_minutes - b.duration_minutes)
+                .map((r, i) => [r.university_id, i + 1])
         );
 
         // 현재 위치가 저장 주소와 겹치면 파란 마커는 생략하고 노란 별 하나로만 표시한다.
@@ -217,8 +235,11 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
 
             const iconSize = isFavorite ? 30 : size;
             const labelTop = isFavorite ? 34 : size + 4;
+            const rank = rankById.get(uni.id);
+            const labelClass =
+                rank !== undefined && rank <= ALWAYS_LABELED_TOP_N ? "findu-label findu-label-top" : "findu-label";
             const positionedLabel = result
-                ? `<div style="position:absolute;top:${labelTop}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${result.duration_minutes}분</div>`
+                ? `<div class="${labelClass}" style="position:absolute;top:${labelTop}px;left:50%;transform:translateX(-50%);background:white;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,0.15);white-space:nowrap">${shortUniversityName(uni.id, uni.name)} <span style="color:#111827">${result.duration_minutes}분</span></div>`
                 : "";
 
             const marker = new window.naver.maps.Marker({

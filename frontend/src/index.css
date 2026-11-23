@@ -10,3 +10,11 @@
         font-feature-settings: "cv11", "ss01";
     }
 }
+/* 지도 핀 이름표: 기본은 숨기고, 가까운 상위 몇 곳(findu-label-top)이나 줌인 상태에서만 보인다. */
+.findu-label {
+    display: none;
+}
+.findu-label.findu-label-top,
+.findu-zoomed .findu-label {
+    display: block;
+}

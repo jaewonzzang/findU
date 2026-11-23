@@ -23,7 +23,7 @@ const Home = () => {
     const [maxMinutes, setMaxMinutes] = useState<number>(60);
     const [resetKey, setResetKey] = useState<number>(0);
     const { search, reset, results, homeLocation, loading, error } = useSearch();
-    const { user } = useAuth();
+    const { user, loading: authLoading, login } = useAuth();
     const { addresses, save, remove, favoriteIds } = useFavorites();
     const [lastAddress, setLastAddress] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
@@ -95,6 +95,32 @@ const Home = () => {
     );
     const showResultsPanel = loading || results !== null;
 
+    // 로그인은 "이 주소 저장"을 누를 때 처음 요구한다. 카카오 로그인은 페이지를 떠났다 돌아오므로
+    // 검색하던 주소를 잠시 보관했다가, 돌아오면 같은 결과를 다시 띄워준다.
+    const PENDING_KEY = "findu:pendingAddress";
+    const canOfferLoginToSave = !user && !authLoading && !!lastAddress && !!homeLocation && !loading;
+    const handleLoginToSave = () => {
+        if (!lastAddress) return;
+        try {
+            sessionStorage.setItem(PENDING_KEY, lastAddress);
+        } catch {
+            /* 저장소를 못 쓰면 복귀 후 다시 검색하면 된다 */
+        }
+        login();
+    };
+    useEffect(() => {
+        if (authLoading || !user) return;
+        let pending: string | null = null;
+        try {
+            pending = sessionStorage.getItem(PENDING_KEY);
+            sessionStorage.removeItem(PENDING_KEY);
+        } catch {
+            pending = null;
+        }
+        if (pending) handleSearch(pending);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, user]);
+
     // 같은 대학을 다시 누르면 선택 해제. MapContainer effect 의존성이라 참조를 고정한다.
     const handleSelectUniversity = useCallback((id: string) => {
         setSelectedUniversityId((prev) => (prev === id ? null : id));
@@ -134,8 +160,8 @@ const Home = () => {
                 <MinimalSearchBar key={resetKey} onSearch={handleSearch} loading={loading} />
                 <SavedAddresses
                     addresses={addresses}
-                    canSaveCurrent={canSaveCurrent}
-                    onSaveCurrent={handleSaveCurrent}
+                    canSaveCurrent={canSaveCurrent || canOfferLoginToSave}
+                    onSaveCurrent={user ? handleSaveCurrent : handleLoginToSave}
                     onSelect={handleSearch}
                     onDelete={remove}
                 />
@@ -153,8 +179,14 @@ const Home = () => {
                 />
             )}
 
-            <div className="fixed top-4 right-4 z-10 bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5">
-                <AuthButton canSaveCurrent={canSaveCurrent} onSaveCurrent={handleSaveCurrent} />
+            <div
+                className={`fixed top-4 right-4 z-10 ${
+                    user
+                        ? "bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5"
+                        : "bg-white/70 backdrop-blur rounded-full shadow-sm px-3 py-1"
+                }`}
+            >
+                <AuthButton canSaveCurrent={canSaveCurrent} onSaveCurrent={handleSaveCurrent} subtle />
             </div>
 
             {loginFailed && (
