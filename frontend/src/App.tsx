@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useSearchParams, type Location } from "react-router-dom";
 import Header from "./components/Header";
 import LeftSidebar from "./components/LeftSidebar";
@@ -9,6 +9,7 @@ import UniversityList from "./pages/UniversityList";
 import UniversityListModal from "./components/UniversityListModal";
 import About from "./pages/About";
 import SavedAddresses from "./components/SavedAddresses";
+import ResultsPanel from "./components/ResultsPanel";
 import CookieConsent from "./components/CookieConsent";
 import { fetchUniversities } from "./api";
 import { useSearch } from "./hooks/useSearch";
@@ -26,6 +27,8 @@ const Home = () => {
     const { addresses, save, remove, favoriteIds } = useFavorites();
     const [lastAddress, setLastAddress] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
+    // 리스트와 지도가 공유하는 선택 대학. 한쪽에서 고르면 다른 쪽도 강조된다.
+    const [selectedUniversityId, setSelectedUniversityId] = useState<string | null>(null);
     const mapRef = useRef<MapContainerHandle | null>(null);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -49,6 +52,7 @@ const Home = () => {
     const handleReset = () => {
         reset();
         setLastAddress(null);
+        setSelectedUniversityId(null);
         setMaxMinutes(60);
         setResetKey((k) => k + 1);
         mapRef.current?.resetView();
@@ -57,6 +61,7 @@ const Home = () => {
 
     const handleSearch = (address: string) => {
         setLastAddress(address);
+        setSelectedUniversityId(null);
         search(address);
     };
 
@@ -80,9 +85,21 @@ const Home = () => {
         !loading &&
         !addresses.some((a) => a.address === lastAddress);
 
-    // 지도는 maxMinutes 로 마커를 거르므로, 검색은 됐는데 전부 걸러진 경우를 따로 안내한다.
-    const visibleCount = (results ?? []).filter((r) => r.duration_minutes <= maxMinutes).length;
-    const showNoResults = !loading && !error && !!homeLocation && visibleCount === 0;
+    // 지도와 같은 기준(maxMinutes)으로 거른 뒤 가까운 순으로 세운다 — 이게 findU의 "순위"다.
+    const rankedResults = useMemo(
+        () =>
+            (results ?? [])
+                .filter((r) => r.duration_minutes <= maxMinutes)
+                .sort((a, b) => a.duration_minutes - b.duration_minutes),
+        [results, maxMinutes]
+    );
+    const showResultsPanel = loading || results !== null;
+
+    // 같은 대학을 다시 누르면 선택 해제. MapContainer effect 의존성이라 참조를 고정한다.
+    const handleSelectUniversity = useCallback((id: string) => {
+        setSelectedUniversityId((prev) => (prev === id ? null : id));
+    }, []);
+    const handleClearSelection = useCallback(() => setSelectedUniversityId(null), []);
 
     const handleSaveCurrent = () => {
         if (!lastAddress || !homeLocation) return;
@@ -103,7 +120,9 @@ const Home = () => {
                         universities={universities}
                         commuteResults={results}
                         visibleUniversityIds={null}
-                        selectedUniversityId={null}
+                        selectedUniversityId={selectedUniversityId}
+                        onSelectUniversity={handleSelectUniversity}
+                        onMapClick={handleClearSelection}
                         maxMinutes={maxMinutes}
                         savedAddresses={addresses}
                         favoriteUniversityIds={favoriteIds}
@@ -120,12 +139,19 @@ const Home = () => {
                     onSelect={handleSearch}
                     onDelete={remove}
                 />
-                {showNoResults && (
-                    <p className="pb-3 text-xs text-gray-500">
-                        {maxMinutes}분 이내에 닿는 대학이 없어요. 왼쪽에서 최대 시간을 늘려보세요.
-                    </p>
-                )}
             </div>
+
+            {showResultsPanel && (
+                <ResultsPanel
+                    results={rankedResults}
+                    loading={loading}
+                    address={lastAddress}
+                    maxMinutes={maxMinutes}
+                    onMaxMinutesChange={setMaxMinutes}
+                    selectedId={selectedUniversityId}
+                    onSelect={handleSelectUniversity}
+                />
+            )}
 
             <div className="fixed top-4 right-4 z-10 bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg px-3 py-1.5">
                 <AuthButton canSaveCurrent={canSaveCurrent} onSaveCurrent={handleSaveCurrent} />

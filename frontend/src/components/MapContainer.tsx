@@ -17,6 +17,7 @@ interface MapContainerProps {
     visibleUniversityIds: Set<string> | null;
     selectedUniversityId: string | null;
     onSelectUniversity?: (id: string) => void;
+    onMapClick?: () => void;
     maxMinutes: number;
     savedAddresses?: SavedAddress[];
     favoriteUniversityIds?: Set<string>;
@@ -42,6 +43,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     visibleUniversityIds,
     selectedUniversityId,
     onSelectUniversity,
+    onMapClick,
     maxMinutes,
     savedAddresses,
     favoriteUniversityIds,
@@ -54,6 +56,9 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
     const pinnedIdRef = useRef<string | null>(null);
     const listenersRef = useRef<any[]>([]);
     const [mapReady, setMapReady] = useState(false);
+    // 지도 init effect는 한 번만 돌기 때문에 최신 콜백을 ref로 넘겨준다.
+    const onMapClickRef = useRef(onMapClick);
+    onMapClickRef.current = onMapClick;
     const [loadError, setLoadError] = useState<string | null>(null);
 
     useImperativeHandle(ref, () => ({
@@ -80,8 +85,9 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                     center: new window.naver.maps.LatLng(37.5665, 126.9780),
                     zoom: 11,
                     zoomControl: true,
+                    // 오른쪽 위는 결과 패널이 차지하므로 줌 버튼은 왼쪽 아래로 옮긴다.
                     zoomControlOptions: {
-                        position: window.naver.maps.Position.TOP_RIGHT,
+                        position: window.naver.maps.Position.LEFT_BOTTOM,
                     },
                 });
                 mapRef.current = map;
@@ -98,6 +104,7 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                         openInfoIdRef.current = null;
                         pinnedIdRef.current = null;
                     }
+                    onMapClickRef.current?.();
                 });
                 setMapReady(true);
             })
@@ -216,9 +223,10 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
                 zIndex: isSelected ? 999 : isFavorite ? 500 : result ? 200 : 100,
             });
 
+            const infoLabel = result ? `${uni.name} · ${result.duration_minutes}분` : uni.name;
             const showInfo = () => {
                 infoWindowRef.current.setContent(
-                    `<div style="position:relative;background:white;color:#1f2937;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap">${uni.name}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:white;box-shadow:2px 2px 4px rgba(0,0,0,0.06)"></div></div>`
+                    `<div style="position:relative;background:white;color:#1f2937;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap">${infoLabel}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:white;box-shadow:2px 2px 4px rgba(0,0,0,0.06)"></div></div>`
                 );
                 infoWindowRef.current.open(mapRef.current, marker);
             };
@@ -265,6 +273,10 @@ const MapContainer = forwardRef<MapContainerHandle, MapContainerProps>(({
             markersRef.current.push(marker);
 
             if (isSelected) {
+                // 리스트에서 골랐을 때도 지도에서 어느 학교인지 바로 보이게 이름표를 고정해 띄운다.
+                showInfo();
+                pinnedIdRef.current = uni.id;
+                openInfoIdRef.current = uni.id;
                 map.panTo(new window.naver.maps.LatLng(uni.lat, uni.lng));
             }
         });
