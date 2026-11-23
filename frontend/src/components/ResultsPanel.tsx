@@ -38,8 +38,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
         row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, [selectedId]);
 
-    const hasFallback = results.some((r) => r.is_fallback);
-
     return (
         <section
             aria-label="통학시간 순위"
@@ -169,13 +167,6 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({
                     </ol>
                 )}
             </div>
-
-            {!loading && results.length > 0 && (
-                <p className="shrink-0 border-t border-gray-100 px-5 py-2.5 text-[11px] leading-relaxed text-gray-400">
-                    대중교통 시간은 차량 경로로 추산한 예상치라 실제와 다를 수 있어요.
-                    {hasFallback && " '추정' 표시는 경로 조회에 실패해 대략 계산한 값이에요."}
-                </p>
-            )}
         </section>
     );
 };

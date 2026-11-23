@@ -25,7 +25,7 @@ const UniversityListModal: React.FC = () => {
             >
                 <button
                     type="button"
-                    aria-label="Close"
+                    aria-label="닫기"
                     onClick={() => navigate(-1)}
                     className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl leading-none w-8 h-8 flex items-center justify-center"
                 >

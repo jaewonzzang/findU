@@ -15,15 +15,15 @@ const Header: React.FC = () => {
         <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
             <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
                 <Link to="/" className="text-xl font-bold tracking-tighter text-brand">
-                    findu
+                    findU
                 </Link>
 
                 <nav className="flex items-center gap-8 text-sm transition-colors">
                     <Link to="/universities" className={isActive("/universities")}>
-                        university list
+                        대학 목록
                     </Link>
                     <Link to="/about" className={isActive("/about")}>
-                        about
+                        소개
                     </Link>
                     <AuthButton />
                 </nav>
